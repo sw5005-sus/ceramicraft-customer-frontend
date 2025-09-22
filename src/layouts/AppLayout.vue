@@ -21,23 +21,30 @@ import Footer from '../components/Footer.vue'
 
 <style scoped>
 .app-layout {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
   width: 100%;
+  min-height: 100vh;
   margin: 0;
   padding: 0;
   overflow-x: hidden;
+  overflow-y: hidden;
   position: relative;
 }
 
 .main-content {
-  flex: 1;
   width: 100%;
   background: #fff;
-  display: flex;
   margin: 0;
   padding: 0;
-  min-height: 0;
+  height: 100vh;
+  padding-top: 70px;
+  padding-bottom: 48px;
+  box-sizing: border-box;
+  overflow-y: auto;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.main-content::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
 }
 </style>

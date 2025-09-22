@@ -13,12 +13,12 @@ const routes: Array<RouteRecordRaw> = [
   // 主应用路由 - 需要认证的页面
   {
     path: '/',
-    redirect: '/home'
-  },
-  {
-    path: '/',
     component: AppLayout,
     children: [
+      {
+        path: '',
+        redirect: '/home'
+      },
       {
         path: 'home',
         name: 'Home',
@@ -28,16 +28,29 @@ const routes: Array<RouteRecordRaw> = [
       {
         path: 'shop',
         name: 'Shop',
-        component: () => import('../views/Home.vue'), // 临时使用Home组件
+        component: () => import('../views/Shop.vue'),
         meta: { requiresAuth: true }
       },
       {
-        path: 'contact',
-        name: 'Contact',
-        component: () => import('../views/Home.vue'), // 临时使用Home组件
+        path: 'product/:id',
+        name: 'ProductDetail',
+        component: () => import('../views/ProductDetail.vue'),
         meta: { requiresAuth: true }
       }
     ]
+  },
+  // 购物车和个人中心页面（不使用AppLayout，无头部底部）
+  {
+    path: '/cart',
+    name: 'Cart',
+    component: () => import('../views/Cart.vue'),
+    meta: { layout: 'none', requiresAuth: true }
+  },
+  {
+    path: '/profile',
+    name: 'Profile',
+    component: () => import('../views/Profile.vue'),
+    meta: { layout: 'none', requiresAuth: true }
   },
   
   // 认证路由 - 登录注册等页面
@@ -52,12 +65,12 @@ const routes: Array<RouteRecordRaw> = [
       }
     ]
   },
-  
-  // 路由重定向配置
+  // 兼容旧/login路径
   {
     path: '/login',
     redirect: '/auth/login'
   },
+  // 404重定向
   {
     path: '/:pathMatch(.*)*',
     redirect: '/'
@@ -77,15 +90,21 @@ const router = createRouter({
 router.beforeEach((to, _from, next) => {
   // 简单的认证状态检查（可以后续扩展为真实的认证逻辑）
   const isAuthenticated = localStorage.getItem('userToken')
-  console.log('路由守卫检查 isAuthenticated:', isAuthenticated, '目标路由:', to.fullPath)
-
+  // 访问根路径时，根据登录状态跳转
+  if (to.path === '/') {
+    if (isAuthenticated) {
+      return next('/home')
+    } else {
+      return next('/auth/login')
+    }
+  }
   // 如果访问需要认证的页面但未登录，重定向到登录页面
   if (to.meta?.requiresAuth && !isAuthenticated) {
     return next('/auth/login')
   }
   // 如果已登录但访问登录页面，重定向到首页
   if (isAuthenticated && to.path === '/auth/login') {
-    return next('/')
+    return next('/home')
   }
   // 其他情况正常跳转
   return next()

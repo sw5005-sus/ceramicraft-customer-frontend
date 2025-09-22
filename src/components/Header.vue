@@ -7,15 +7,9 @@
         </div>
         <span>CERAMIC-CRAFT</span>
       </div>
-      <nav class="nav">
-        <router-link to="/" class="nav-link">Home</router-link>
-        <router-link to="/shop" class="nav-link">Shop</router-link>
-        <router-link to="/contact" class="nav-link">Contact</router-link>
-      </nav>
       <div class="actions">
-        <el-icon class="action-icon" @click="handleUserClick" title="用户菜单"><User /></el-icon>
-        <el-icon class="action-icon"><Search /></el-icon>
-        <div class="cart-icon">
+  <el-icon class="action-icon" @click="goProfile" title="个人中心"><User /></el-icon>
+        <div class="cart-icon" @click="goCart">
           <el-icon class="action-icon"><ShoppingCart /></el-icon>
           <span class="cart-count">0</span>
         </div>
@@ -30,30 +24,18 @@
  * @description 包含品牌logo、导航菜单和用户操作区域的头部组件
  */
 
-import { User, Search, ShoppingCart } from '@element-plus/icons-vue'
+import { User, ShoppingCart } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
-import { ElMessageBox } from 'element-plus'
 
-/** 路由实例 */
 const router = useRouter()
 
-/**
- * 处理用户图标点击
- * @description 简单的退出登录功能（临时实现）
- */
-const handleUserClick = () => {
-  ElMessageBox.confirm('确定要退出登录吗？', '提示', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning',
-  }).then(() => {
-    // 清除认证状态
-    localStorage.removeItem('userToken')
-    // 跳转到登录页面
-    router.push('/auth/login')
-  }).catch(() => {
-    // 用户取消，无需处理
-  })
+// 跳转到个人中心
+const goProfile = () => {
+  router.push('/profile')
+}
+// 跳转到购物车
+const goCart = () => {
+  router.push('/cart')
 }
 </script>
 
@@ -64,6 +46,11 @@ const handleUserClick = () => {
   height: 70px;
   border-bottom: 1px solid #eee;
   background: #fff;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  z-index: 100;
 }
 
 .header-content {
@@ -74,7 +61,6 @@ const handleUserClick = () => {
   max-width: 1200px;
   padding: 0;
   margin: 0 15px; /* 减小两侧间距 */
-  position: relative; /* 添加相对定位，作为导航的定位参考 */
 }
 
 .logo {
@@ -103,25 +89,6 @@ const handleUserClick = () => {
   font-weight: 600;
   font-size: 20px;
   letter-spacing: 0.5px;
-}
-
-.nav {
-  display: flex;
-  gap: 40px;
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-}
-
-.nav-link {
-  color: #333;
-  text-decoration: none;
-  font-size: 16px;
-  transition: color 0.3s;
-}
-
-.nav-link:hover, .nav-link.router-link-active {
-  color: #c75d35;
 }
 
 .actions {
