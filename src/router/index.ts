@@ -38,6 +38,7 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('../views/Profile.vue'),
     meta: { layout: 'none', requiresAuth: true }
   },
+
   
   // 认证路由 - 登录注册等页面
   {
@@ -51,12 +52,10 @@ const routes: Array<RouteRecordRaw> = [
       }
     ]
   },
-  // 兼容旧/login路径
   {
     path: '/login',
     redirect: '/auth/login'
   },
-  // 404重定向
   {
     path: '/:pathMatch(.*)*',
     redirect: '/'
@@ -81,12 +80,11 @@ router.beforeEach((to, _from, next) => {
   if (to.path === '/') {
     return next('/home')
   }
-  
   // 如果访问需要认证的页面但未登录，重定向到登录页面
   if (to.meta?.requiresAuth && !isAuthenticated) {
     return next('/auth/login')
   }
-  
+
   // 其他情况正常跳转
   return next()
 })

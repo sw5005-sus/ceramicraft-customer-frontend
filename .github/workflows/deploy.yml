@@ -1,0 +1,61 @@
+name: Deploy Vue to EC2 (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+        version:
+            description: 'version'
+            required: false
+            default: 'latest'
+            type: string
+        command:
+            description: 'deploy or restart'
+            required: true
+            default: 'deploy'
+            type: choice
+            options:
+                - deploy
+                - restart
+
+jobs:
+  build:
+    if: ${{ github.event.inputs.command == 'deploy' }} # ← 仅在 deploy 时构建
+    runs-on: ubuntu-latest
+    env:
+      DH_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+      - name: login to dockerhub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+      - name: build docker image
+        run: |
+          docker build -t "${DH_USERNAME}/ceramicraft-customer-frontend:${{ github.event.inputs.version }}" .
+      - name: push to dockerhub
+        run: |
+          docker push "${DH_USERNAME}/ceramicraft-customer-frontend:${{ github.event.inputs.version }}"
+  deploy:
+    if: ${{ github.event.inputs.command == 'deploy' }}
+    needs: build
+    runs-on: self-hosted
+    env:
+      DH_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
+    steps:
+      - name: pull the docker image
+        run: |
+          docker pull "${DH_USERNAME}/ceramicraft-customer-frontend:${{ github.event.inputs.version }}"
+      - name: run docker container
+        run: |
+          docker stop ceramicraft-customer-frontend || true
+          docker rm ceramicraft-customer-frontend || true
+          docker run -d --name ceramicraft-customer-frontend --network ceramicraft-network -p 4174:4173 "${DH_USERNAME}/ceramicraft-customer-frontend:${{ github.event.inputs.version }}"
+  restart:
+    if: ${{ github.event.inputs.command == 'restart' }} # ← 仅在 restart 时运行
+    runs-on: self-hosted
+    steps:
+      - name: restart docker container
+        run: |
+          docker restart ceramicraft-customer-frontend || true

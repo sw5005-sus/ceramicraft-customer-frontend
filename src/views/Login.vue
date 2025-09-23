@@ -62,7 +62,6 @@ import { ElMessage } from 'element-plus'
 
 const router = useRouter()
 const activeTab = ref('login')
-
 const loginForm = ref({
   email: '',
   password: '',
@@ -75,11 +74,13 @@ const registerForm = ref({
   confirmPassword: ''
 })
 
+
 const showConfirmPassword = ref(false)
 
 const checkPasswordInput = () => {
   showConfirmPassword.value = registerForm.value.password.length > 0
 }
+
 
 const onLogin = () => {
   if (!loginForm.value.email || !loginForm.value.password) {
@@ -200,10 +201,10 @@ const onBack = () => {
   max-height: 400px;
   overflow: hidden;
 }
-
 .form-group {
   margin-bottom: 20px;
 }
+
 
 .form-group:last-child {
   margin-top: auto;

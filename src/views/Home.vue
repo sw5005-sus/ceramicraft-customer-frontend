@@ -36,6 +36,7 @@
 </template>
 
 <script setup lang="ts">
+
 // 默认图片
 import defaultImg from '../assets/defaultimg.png'
 import { useRouter } from 'vue-router'

@@ -1,0 +1,49 @@
+name: ZAP Security Scan
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  zap:
+    runs-on: ubuntu-latest
+    steps:
+      # ---- ① 检出源码 ----
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ---- ② 安装 Node 与依赖 ----
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+
+      # ---- ③ 构建静态包 ----
+      - name: Build
+        run: npm run build
+        # 产出目录 dist (vite) 或 build (vue-cli)
+
+      # ---- ④ 起本地 HTTP 服务器 ----
+      - name: Serve site for ZAP
+        run: |
+          # 启动 HTTP 服务器（这里用 vite 自带的）
+          npx serve dist -l 4173 &
+          # 等待监听成功
+          timeout 60 bash -c 'until nc -z 127.0.0.1 4173; do sleep 1; done'
+
+      # ---- ⑤ ZAP Full Scan ----
+      - name: Run OWASP ZAP Full Scan
+        uses: zaproxy/action-full-scan@v0.12.0
+        with:
+          target: 'http://127.0.0.1:4173'
+          rules_file_name: '.zap/rules.tsv'   # 可选，屏蔽误报
+          fail_action: false                  # 有漏洞也不让 CI 失败
+          allow_issue_writing: false           # 关闭自动开 GitHub Issue
+          issue_title: 'ZAP 安全扫描告警'
+          artifact_name: 'zap-report'         # 附件报告
