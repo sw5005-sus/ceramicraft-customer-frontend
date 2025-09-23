@@ -53,7 +53,7 @@ const products = [
 ]
 
 const router = useRouter()
-function goDetail(id:number) {
+function goDetail(id: number) {
   router.push(`/product/${id}`)
 }
 </script>
