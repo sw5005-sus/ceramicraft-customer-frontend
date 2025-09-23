@@ -7,15 +7,14 @@
         </div>
         <span>CERAMIC-CRAFT</span>
       </div>
-      <nav class="nav">
-        <router-link to="/" class="nav-link">Home</router-link>
-        <router-link to="/shop" class="nav-link">Shop</router-link>
-        <router-link to="/contact" class="nav-link">Contact</router-link>
-      </nav>
       <div class="actions">
-        <el-icon class="action-icon" @click="handleUserClick" title="用户菜单"><User /></el-icon>
-        <el-icon class="action-icon"><Search /></el-icon>
-        <div class="cart-icon">
+        <div class="user-status">
+          <el-icon class="action-icon" @click="goProfile" :title="isLoggedIn ? '个人中心' : '登录'">
+            <User />
+          </el-icon>
+          <span v-if="!isLoggedIn" class="login-status">未登录</span>
+        </div>
+        <div class="cart-icon" @click="goCart">
           <el-icon class="action-icon"><ShoppingCart /></el-icon>
           <span class="cart-count">0</span>
         </div>
@@ -30,30 +29,53 @@
  * @description 包含品牌logo、导航菜单和用户操作区域的头部组件
  */
 
-import { User, Search, ShoppingCart } from '@element-plus/icons-vue'
+import { ref, onMounted, onUnmounted } from 'vue'
+import { User, ShoppingCart } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
-import { ElMessageBox } from 'element-plus'
 
-/** 路由实例 */
 const router = useRouter()
 
-/**
- * 处理用户图标点击
- * @description 简单的退出登录功能（临时实现）
- */
-const handleUserClick = () => {
-  ElMessageBox.confirm('确定要退出登录吗？', '提示', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning',
-  }).then(() => {
-    // 清除认证状态
-    localStorage.removeItem('userToken')
-    // 跳转到登录页面
+// 登录状态
+const isLoggedIn = ref(!!localStorage.getItem('userToken'))
+
+// 监听localStorage变化的函数
+const handleStorageChange = () => {
+  isLoggedIn.value = !!localStorage.getItem('userToken')
+}
+
+// 监听登录状态变化的自定义事件
+const handleLoginStatusChange = () => {
+  isLoggedIn.value = !!localStorage.getItem('userToken')
+}
+
+onMounted(() => {
+  // 监听localStorage变化
+  window.addEventListener('storage', handleStorageChange)
+  // 监听自定义登录状态变化事件
+  window.addEventListener('loginStatusChanged', handleLoginStatusChange)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('storage', handleStorageChange)
+  window.removeEventListener('loginStatusChanged', handleLoginStatusChange)
+})
+
+// 跳转到个人中心或登录页
+const goProfile = () => {
+  if (isLoggedIn.value) {
+    router.push('/profile')
+  } else {
     router.push('/auth/login')
-  }).catch(() => {
-    // 用户取消，无需处理
-  })
+  }
+}
+
+// 跳转到购物车
+const goCart = () => {
+  if (isLoggedIn.value) {
+    router.push('/cart')
+  } else {
+    router.push('/auth/login')
+  }
 }
 </script>
 
@@ -64,6 +86,11 @@ const handleUserClick = () => {
   height: 70px;
   border-bottom: 1px solid #eee;
   background: #fff;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  z-index: 100;
 }
 
 .header-content {
@@ -74,7 +101,6 @@ const handleUserClick = () => {
   max-width: 1200px;
   padding: 0;
   margin: 0 15px; /* 减小两侧间距 */
-  position: relative; /* 添加相对定位，作为导航的定位参考 */
 }
 
 .logo {
@@ -105,25 +131,6 @@ const handleUserClick = () => {
   letter-spacing: 0.5px;
 }
 
-.nav {
-  display: flex;
-  gap: 40px;
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-}
-
-.nav-link {
-  color: #333;
-  text-decoration: none;
-  font-size: 16px;
-  transition: color 0.3s;
-}
-
-.nav-link:hover, .nav-link.router-link-active {
-  color: #c75d35;
-}
-
 .actions {
   display: flex;
   align-items: center;
@@ -131,6 +138,27 @@ const handleUserClick = () => {
   height: 100%; /* 确保高度一致 */
   min-width: 180px; /* 设置最小宽度，与左侧logo区域保持平衡 */
   justify-content: flex-end; /* 确保右对齐 */
+}
+
+.user-status {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.login-status {
+  font-size: 12px;
+  color: #999;
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background-color: #f5f5f5;
+  color: #666;
+  padding: 2px 4px;
+  border-radius: 2px;
+  white-space: nowrap;
+  font-size: 10px;
 }
 
 .action-icon {

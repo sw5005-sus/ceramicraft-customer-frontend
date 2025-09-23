@@ -1,4 +1,20 @@
 <template>
-  <!-- 根组件，渲染路由匹配的组件 -->
-  <router-view />
+  <component :is="layoutComponent">
+    <router-view />
+  </component>
 </template>
+
+<script setup lang="ts">
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
+import AppLayout from './layouts/AppLayout.vue'
+
+const route = useRoute()
+const layoutComponent = computed(() => {
+  if (route.meta.layout === 'none') {
+    return 'div'
+  }
+  return AppLayout
+})
+</script>
+
