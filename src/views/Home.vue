@@ -36,11 +36,16 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * 产品列表页面
+ * @description 显示所有陶瓷产品的列表页面
+ */
 
 // 默认图片
 import defaultImg from '../assets/defaultimg.png'
 import { useRouter } from 'vue-router'
 
+// 产品列表数据
 const products = [
   { id: 1, img: defaultImg, artist: 'KIM JOO GOH', title: 'A BOTTLE OF TREATS', price: 129, outOfStock: true },
   { id: 2, img: defaultImg, artist: 'TROY LEE', title: 'A FLORAL INTERPRETATION', price: 89, outOfStock: false },
@@ -53,8 +58,10 @@ const products = [
 ]
 
 const router = useRouter()
-function goDetail(id: number) {
-  router.push(`/product/${id}`)
+
+// 跳转到商品详情页
+const goDetail = () => {
+  // router.push(`/product/${id}`)
 }
 </script>
 

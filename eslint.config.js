@@ -5,6 +5,9 @@ import tsPlugin from '@typescript-eslint/eslint-plugin'
 
 export default [
   {
+    ignores: ['.vite/**', 'dist/**', 'node_modules/**'],
+  },
+  {
     files: ['**/*.{js,ts,vue}'], // 匹配所有 JavaScript、TypeScript 和 Vue 文件
     languageOptions: {
       parser: vueParser, // 使用 Vue 的解析器

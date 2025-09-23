@@ -1,4 +1,0 @@
-# 忽略vite生成的依赖文件
-.vite/
-dist/
-node_modules/
