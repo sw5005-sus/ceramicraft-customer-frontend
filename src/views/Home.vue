@@ -12,7 +12,7 @@
       </div>
     </div>
     <div class="products-list">
-  <div v-for="item in products" :key="item.id" class="product-card" @click="goDetail(item.id)" style="cursor:pointer;">
+  <div v-for="item in products" :key="item.id" class="product-card" style="cursor:pointer;">
         <div class="product-img-box">
           <img :src="item.img" alt="product" />
           <span v-if="item.outOfStock" class="out-of-stock">OUT OF STOCK</span>
@@ -43,8 +43,6 @@
 
 // 默认图片
 import defaultImg from '../assets/defaultimg.png'
-import { useRouter } from 'vue-router'
-
 // 产品列表数据
 const products = [
   { id: 1, img: defaultImg, artist: 'KIM JOO GOH', title: 'A BOTTLE OF TREATS', price: 129, outOfStock: true },
@@ -56,13 +54,6 @@ const products = [
   { id: 7, img: defaultImg, artist: 'AHMAD ZAKI', title: 'CONTEMPORARY VASE', price: 110, outOfStock: true },
   { id: 8, img: defaultImg, artist: 'CHEN WEI', title: 'ESSENCE BOWL', price: 65, outOfStock: false },
 ]
-
-const router = useRouter()
-
-// 跳转到商品详情页
-const goDetail = () => {
-  // router.push(`/product/${id}`)
-}
 </script>
 
 <style scoped>
