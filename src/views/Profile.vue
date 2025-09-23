@@ -23,6 +23,8 @@ const handleLogout = () => {
   }).then(() => {
     // 清除认证状态
     localStorage.removeItem('userToken')
+    // 触发自定义事件通知登录状态变化
+    window.dispatchEvent(new CustomEvent('loginStatusChanged'))
     // 跳转到登录页面
     router.push('/auth/login')
   }).catch(() => {

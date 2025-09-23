@@ -89,7 +89,12 @@ const onLogin = () => {
   
   console.log('Login:', loginForm.value)
   localStorage.setItem('userToken', 'mock-token-' + Date.now())
-  router.push('/')
+  
+  // 触发自定义事件通知登录状态变化
+  window.dispatchEvent(new CustomEvent('loginStatusChanged'))
+  
+  // 登录成功后跳转到home页面
+  router.push('/home')
 }
 
 const onRegister = () => {

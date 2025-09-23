@@ -21,20 +21,7 @@ const routes: Array<RouteRecordRaw> = [
       {
         path: 'home',
         name: 'Home',
-        component: () => import('../views/Home.vue'),
-        meta: { requiresAuth: true }
-      },
-      {
-        path: 'shop',
-        name: 'Shop',
-        component: () => import('../views/Shop.vue'),
-        meta: { requiresAuth: true }
-      },
-      {
-        path: 'product/:id',
-        name: 'ProductDetail',
-        component: () => import('../views/ProductDetail.vue'),
-        meta: { requiresAuth: true }
+        component: () => import('../views/Home.vue')
       }
     ]
   },
@@ -84,27 +71,22 @@ const router = createRouter({
 
 /**
  * 全局路由前置守卫
- * @description 处理路由跳转前的逻辑，如权限验证和重定向
+ * @description 处理路由跳转前的逻辑
  */
 router.beforeEach((to, _from, next) => {
-  // 简单的认证状态检查（可以后续扩展为真实的认证逻辑）
+  // 简单的认证状态检查
   const isAuthenticated = localStorage.getItem('userToken')
-  // 访问根路径时，根据登录状态跳转
+  
+  // 访问根路径时，直接跳转到home页面
   if (to.path === '/') {
-    if (isAuthenticated) {
-      return next('/home')
-    } else {
-      return next('/auth/login')
-    }
+    return next('/home')
   }
+  
   // 如果访问需要认证的页面但未登录，重定向到登录页面
   if (to.meta?.requiresAuth && !isAuthenticated) {
     return next('/auth/login')
   }
-  // 如果已登录但访问登录页面，重定向到首页
-  if (isAuthenticated && to.path === '/auth/login') {
-    return next('/home')
-  }
+  
   // 其他情况正常跳转
   return next()
 })

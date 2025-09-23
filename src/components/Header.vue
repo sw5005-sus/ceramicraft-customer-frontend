@@ -8,7 +8,12 @@
         <span>CERAMIC-CRAFT</span>
       </div>
       <div class="actions">
-  <el-icon class="action-icon" @click="goProfile" title="个人中心"><User /></el-icon>
+        <div class="user-status">
+          <el-icon class="action-icon" @click="goProfile" :title="isLoggedIn ? '个人中心' : '登录'">
+            <User />
+          </el-icon>
+          <span v-if="!isLoggedIn" class="login-status">未登录</span>
+        </div>
         <div class="cart-icon" @click="goCart">
           <el-icon class="action-icon"><ShoppingCart /></el-icon>
           <span class="cart-count">0</span>
@@ -24,18 +29,53 @@
  * @description 包含品牌logo、导航菜单和用户操作区域的头部组件
  */
 
+import { ref, onMounted, onUnmounted } from 'vue'
 import { User, ShoppingCart } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
-// 跳转到个人中心
-const goProfile = () => {
-  router.push('/profile')
+// 登录状态
+const isLoggedIn = ref(!!localStorage.getItem('userToken'))
+
+// 监听localStorage变化的函数
+const handleStorageChange = () => {
+  isLoggedIn.value = !!localStorage.getItem('userToken')
 }
+
+// 监听登录状态变化的自定义事件
+const handleLoginStatusChange = () => {
+  isLoggedIn.value = !!localStorage.getItem('userToken')
+}
+
+onMounted(() => {
+  // 监听localStorage变化
+  window.addEventListener('storage', handleStorageChange)
+  // 监听自定义登录状态变化事件
+  window.addEventListener('loginStatusChanged', handleLoginStatusChange)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('storage', handleStorageChange)
+  window.removeEventListener('loginStatusChanged', handleLoginStatusChange)
+})
+
+// 跳转到个人中心或登录页
+const goProfile = () => {
+  if (isLoggedIn.value) {
+    router.push('/profile')
+  } else {
+    router.push('/auth/login')
+  }
+}
+
 // 跳转到购物车
 const goCart = () => {
-  router.push('/cart')
+  if (isLoggedIn.value) {
+    router.push('/cart')
+  } else {
+    router.push('/auth/login')
+  }
 }
 </script>
 
@@ -98,6 +138,27 @@ const goCart = () => {
   height: 100%; /* 确保高度一致 */
   min-width: 180px; /* 设置最小宽度，与左侧logo区域保持平衡 */
   justify-content: flex-end; /* 确保右对齐 */
+}
+
+.user-status {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.login-status {
+  font-size: 12px;
+  color: #999;
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background-color: #f5f5f5;
+  color: #666;
+  padding: 2px 4px;
+  border-radius: 2px;
+  white-space: nowrap;
+  font-size: 10px;
 }
 
 .action-icon {
