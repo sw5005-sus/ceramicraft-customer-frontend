@@ -59,7 +59,6 @@ function goDetail(id:number) {
 
 <style scoped>
 .products-page {
-  padding: 20px 0 56px 0; /* 减少顶部padding从32px到20px */
   max-width: 1200px;
   margin: 0 auto;
 }
@@ -78,7 +77,7 @@ h1 {
 }
 .search-input {
   width: 350px;
-  padding: 8px 12px;
+  padding: 8px 12px ;
   font-size: 1rem;
   border: 1px solid #ddd;
   border-radius: 4px;

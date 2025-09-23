@@ -35,13 +35,15 @@ import Footer from '../components/Footer.vue'
   background: #fff;
   margin: 0;
   padding: 0;
-  height: 100vh;
-  padding-top: 70px;
-  padding-bottom: 48px;
+  height: 100%;
+  padding-top: 50px;
+  padding-bottom: 50px;
   box-sizing: border-box;
   overflow-y: auto;
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* IE and Edge */
+  scroll-behavior: auto; /* 禁用平滑滚动 */
+  overscroll-behavior: none; /* 防止过度滚动 */
 }
 
 .main-content::-webkit-scrollbar {

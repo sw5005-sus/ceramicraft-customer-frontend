@@ -6,7 +6,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 import AppLayout from '../layouts/AppLayout.vue'
-import AuthLayout from '../layouts/AuthLayout.vue'
 
 /** 路由配置数组 */
 const routes: Array<RouteRecordRaw> = [
@@ -56,7 +55,7 @@ const routes: Array<RouteRecordRaw> = [
   // 认证路由 - 登录注册等页面
   {
     path: '/auth',
-    component: AuthLayout,
+    component: AppLayout,
     children: [
       {
         path: 'login',
