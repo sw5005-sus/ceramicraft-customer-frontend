@@ -1,14 +1,15 @@
 <template>
   <div class="profile-page">
-    <h2>个人中心</h2>
-    <p>这里是个人信息页面内容。</p>
-    <button class="logout-btn" @click="handleLogout">退出登录</button>
+    <h2>Profile</h2>
+    <p>This is the user profile page content.</p>
+    <button class="logout-btn" @click="handleLogout">LOGOUT</button>
   </div>
 </template>
 
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
-import { ElMessageBox } from 'element-plus'
+import { ElMessageBox, ElMessage } from 'element-plus'
+import { logout } from '../api/auth'
 
 const router = useRouter()
 
@@ -16,17 +17,23 @@ const router = useRouter()
  * 处理退出登录
  */
 const handleLogout = () => {
-  ElMessageBox.confirm('确定要退出登录吗？', '提示', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
+  ElMessageBox.confirm('Are you sure you want to logout?', 'Confirmation', {
+    confirmButtonText: 'Confirm',
+    cancelButtonText: 'Cancel',
     type: 'warning',
-  }).then(() => {
-    // 清除认证状态
-    localStorage.removeItem('userToken')
-    // 触发自定义事件通知登录状态变化
-    window.dispatchEvent(new CustomEvent('loginStatusChanged'))
-    // 跳转到登录页面
-    router.push('/auth/login')
+  }).then(async () => {
+    try {
+      // 调用退出登录API
+      await logout()
+      ElMessage.success('Logout successful')
+      // 跳转到登录页面
+      router.push('/auth/login')
+    } catch (error) {
+      // API调用失败，但本地状态已经清除，仍然跳转到登录页
+      console.error('Logout API failed:', error)
+      ElMessage.warning('Logout request failed, but local login state has been cleared')
+      router.push('/auth/login')
+    }
   }).catch(() => {
     // 用户取消，无需处理
   })

@@ -9,10 +9,10 @@
       </div>
       <div class="actions">
         <div class="user-status">
-          <el-icon class="action-icon" @click="goProfile" :title="isLoggedIn ? '个人中心' : '登录'">
+          <el-icon class="action-icon" @click="goProfile" :title="isLoggedIn ? 'Profile' : 'Login'">
             <User />
           </el-icon>
-          <span v-if="!isLoggedIn" class="login-status">未登录</span>
+          <span v-if="!isLoggedIn" class="login-status">Not Logged In</span>
         </div>
         <div class="cart-icon" @click="goCart">
           <el-icon class="action-icon"><ShoppingCart /></el-icon>

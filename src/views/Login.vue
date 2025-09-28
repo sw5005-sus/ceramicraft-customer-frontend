@@ -13,11 +13,11 @@
         <div v-if="activeTab === 'login'" class="form-container">
           <div class="form-group">
             <div class="form-label">EMAIL ADDRESS</div>
-            <input type="email" v-model="loginForm.email" class="form-input" />
+            <input type="email" v-model="loginForm.email" class="form-input" placeholder="Enter your email address" />
           </div>
           <div class="form-group">
             <div class="form-label">PASSWORD</div>
-            <input type="password" v-model="loginForm.password" class="form-input" />
+            <input type="password" v-model="loginForm.password" class="form-input" placeholder="Must be more than 8 characters with letters and numbers" />
           </div>
           <div class="form-group form-checkbox">
             <label class="checkbox-container">
@@ -27,41 +27,81 @@
             <span class="forgot">FORGOT PASSWORD?</span>
           </div>
           <div class="form-group">
-            <button class="sign-in-button" @click="onLogin">SIGN IN</button>
-            <button class="back-button" @click="onBack">BACK</button>
+            <button class="sign-in-button" @click="onLogin" :disabled="loading">
+              {{ loading ? 'SIGNING IN...' : 'SIGN IN' }}
+            </button>
+            <button class="back-button" @click="onBack" :disabled="loading">BACK TO HOME</button>
           </div>
         </div>
         
         <div v-if="activeTab === 'register'" class="form-container">
-          <div class="form-group">
-            <div class="form-label">EMAIL ADDRESS</div>
-            <input type="email" v-model="registerForm.email" class="form-input" />
+          <!-- 步骤1: 输入邮箱和密码 -->
+          <div v-if="registerStep === 'input'">
+            <div class="form-group">
+              <div class="form-label">EMAIL ADDRESS</div>
+              <input type="email" v-model="registerForm.email" class="form-input" placeholder="Enter your email address" />
+            </div>
+            <div class="form-group">
+              <div class="form-label">PASSWORD</div>
+              <input type="password" v-model="registerForm.password" class="form-input" placeholder="Must be more than 8 characters with letters and numbers" />
+            </div>
+            <div class="form-group">
+              <button class="sign-in-button" @click="onRegister" :disabled="loading">
+                {{ loading ? 'REGISTERING...' : 'REGISTER' }}
+              </button>
+              <button class="back-button" @click="onBack" :disabled="loading">BACK TO HOME</button>
+            </div>
           </div>
-          <div class="form-group">
-            <div class="form-label">PASSWORD</div>
-            <input type="password" v-model="registerForm.password" class="form-input" @input="checkPasswordInput" />
-          </div>
-          <div class="form-group" v-if="showConfirmPassword">
-            <div class="form-label">CONFIRM PASSWORD</div>
-            <input type="password" v-model="registerForm.confirmPassword" class="form-input" />
-          </div>
-          <div class="form-group">
-            <button class="sign-in-button" @click="onRegister">REGISTER</button>
-            <button class="back-button" @click="onBack">BACK</button>
+          
+          <!-- 步骤2: 输入验证码 -->
+          <div v-if="registerStep === 'verification'">
+            <div class="form-group">
+              <div class="form-label">EMAIL ADDRESS</div>
+              <input type="email" v-model="registerForm.email" class="form-input" placeholder="Enter your email address" />
+            </div>
+            <div class="form-group">
+              <div class="form-label">PASSWORD</div>
+              <input type="password" v-model="registerForm.password" class="form-input" placeholder="Must be more than 8 characters with letters and numbers" />
+            </div>
+            <div class="form-group">
+              <div class="form-label">VERIFICATION CODE</div>
+              <div class="verification-input-group">
+                <input type="text" v-model="registerForm.verificationCode" class="form-input verification-input" placeholder="Enter 6-digit verification code" maxlength="6" />
+                <button class="retry-button" @click="onRetryVerification" :disabled="loading" title="Resend verification code">
+                  {{ loading ? '...' : 'RETRY' }}
+                </button>
+              </div>
+            </div>
+            <div class="form-group">
+              <button class="sign-in-button" @click="onActivate" :disabled="loading">
+                {{ loading ? 'ACTIVATING...' : 'ACTIVATE ACCOUNT' }}
+              </button>
+              <button class="back-button" @click="resetRegister" :disabled="loading">START OVER</button>
+            </div>
           </div>
         </div>
+        
+
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { login, register, activateAccount } from '../api/auth'
+import { isValidEmail, getPasswordError } from '../utils'
+import type { LoginRequest, RegisterRequest, ActivateRequest } from '../types/api'
 
 const router = useRouter()
+const loading = ref(false)
 const activeTab = ref('login')
+
+// 注册流程状态：'input' -> 'verification' -> 'completed'
+const registerStep = ref('input')
+
 const loginForm = ref({
   email: '',
   password: '',
@@ -71,49 +111,231 @@ const loginForm = ref({
 const registerForm = ref({
   email: '',
   password: '',
-  confirmPassword: ''
+  verificationCode: ''
 })
 
+// 保存原始的邮箱和密码，用于检测变化
+const originalRegisterData = ref({
+  email: '',
+  password: ''
+})
 
-const showConfirmPassword = ref(false)
+// 监听注册表单的邮箱和密码变化
+watch([() => registerForm.value.email, () => registerForm.value.password], ([newEmail, newPassword]) => {
+  // 如果当前在验证码步骤，并且邮箱或密码发生了变化，则重置到输入状态
+  if (registerStep.value === 'verification') {
+    if (newEmail !== originalRegisterData.value.email || newPassword !== originalRegisterData.value.password) {
+      console.log('Email or password changed, resetting to input step')
+      registerStep.value = 'input'
+      registerForm.value.verificationCode = ''
+    }
+  }
+})
 
-const checkPasswordInput = () => {
-  showConfirmPassword.value = registerForm.value.password.length > 0
-}
-
-
-const onLogin = () => {
+const onLogin = async () => {
   if (!loginForm.value.email || !loginForm.value.password) {
     ElMessage.error('Please enter email and password')
     return
   }
   
-  console.log('Login:', loginForm.value)
-  localStorage.setItem('userToken', 'mock-token-' + Date.now())
+  if (!isValidEmail(loginForm.value.email)) {
+    ElMessage.error('Please enter a valid email address')
+    return
+  }
   
-  // 触发自定义事件通知登录状态变化
-  window.dispatchEvent(new CustomEvent('loginStatusChanged'))
+  // 使用更详细的密码验证
+  const passwordError = getPasswordError(loginForm.value.password)
+  if (passwordError) {
+    ElMessage.error(passwordError)
+    return
+  }
   
-  // 登录成功后跳转到home页面
-  router.push('/home')
+  loading.value = true
+  
+  try {
+    const loginData: LoginRequest = {
+      email: loginForm.value.email,
+      password: loginForm.value.password,
+      id: 0
+    }
+    
+    const response = await login(loginData)
+    
+    // 请求成功就说明登录成功
+    if (response && response.message) {
+      ElMessage.success(response.message)
+      
+      // 登录成功后跳转到home页面
+      router.push('/home')
+    } else {
+      ElMessage.error('Login failed: Invalid response')
+    }
+  } catch (error: unknown) {
+    console.error('Login error:', error)
+    const errorMessage = (error as { err_msg?: string; message?: string })?.err_msg || 
+                         (error as { err_msg?: string; message?: string })?.message || 
+                         'Login failed. Please try again.'
+    ElMessage.error(errorMessage)
+  } finally {
+    loading.value = false
+  }
 }
 
-const onRegister = () => {
+// 注册函数
+const onRegister = async () => {
   if (!registerForm.value.email || !registerForm.value.password) {
-    ElMessage.error('Please complete all required fields')
-    return
-  }
-
-  if (showConfirmPassword.value && registerForm.value.password !== registerForm.value.confirmPassword) {
-    ElMessage.error('Passwords do not match')
+    ElMessage.error('Please enter email and password')
     return
   }
   
-  console.log('Register:', registerForm.value)
+  if (!isValidEmail(registerForm.value.email)) {
+    ElMessage.error('Please enter a valid email address')
+    return
+  }
+  
+  const passwordError = getPasswordError(registerForm.value.password)
+  if (passwordError) {
+    ElMessage.error(passwordError)
+    return
+  }
+  
+  loading.value = true
+  
+  try {
+    const registerData: RegisterRequest = {
+      email: registerForm.value.email,
+      password: registerForm.value.password,
+      id: 0
+    }
+    
+    const response = await register(registerData)
+    
+    if (response && response.message) {
+      ElMessage.success(response.message)
+      // 保存当前的邮箱和密码作为原始数据
+      originalRegisterData.value = {
+        email: registerForm.value.email,
+        password: registerForm.value.password
+      }
+      registerStep.value = 'verification'
+    } else {
+      ElMessage.error('Registration failed: Invalid response')
+    }
+  } catch (error: unknown) {
+    console.error('Registration error:', error)
+    const errorMessage = (error as { err_msg?: string; message?: string })?.err_msg || 
+                         (error as { err_msg?: string; message?: string })?.message || 
+                         'Registration failed. Please try again.'
+    ElMessage.error(errorMessage)
+  } finally {
+    loading.value = false
+  }
+}
+
+// 激活账户函数
+const onActivate = async () => {
+  if (!registerForm.value.verificationCode) {
+    ElMessage.error('Please enter the verification code')
+    return
+  }
+  
+  if (registerForm.value.verificationCode.length !== 6) {
+    ElMessage.error('Verification code must be 6 digits')
+    return
+  }
+  
+  loading.value = true
+  
+  try {
+    const activateData: ActivateRequest = {
+      code: registerForm.value.verificationCode
+    }
+    
+    const response = await activateAccount(activateData)
+    
+    if (response && response.message) {
+      ElMessage.success(response.message)
+      
+      // 激活成功后重置表单并切换到登录页
+      resetRegister()
+      activeTab.value = 'login'
+    } else {
+      ElMessage.error('Activation failed: Invalid response')
+    }
+  } catch (error: unknown) {
+    console.error('Activation error:', error)
+    const errorMessage = (error as { err_msg?: string; message?: string })?.err_msg || 
+                         (error as { err_msg?: string; message?: string })?.message || 
+                         'Activation failed. Please try again.'
+    ElMessage.error(errorMessage)
+    
+    // 激活失败，返回到初始状态
+    resetRegister()
+  } finally {
+    loading.value = false
+  }
+}
+
+// 重新发送验证码
+const onRetryVerification = async () => {
+  if (!registerForm.value.email || !registerForm.value.password) {
+    ElMessage.error('Missing registration information. Please start over.')
+    resetRegister()
+    return
+  }
+  
+  loading.value = true
+  
+  try {
+    const registerData: RegisterRequest = {
+      email: registerForm.value.email,
+      password: registerForm.value.password,
+      id: 0
+    }
+    
+    const response = await register(registerData)
+    
+    if (response && response.message) {
+      ElMessage.success('Verification code resent to your email')
+      // 更新原始数据为当前数据
+      originalRegisterData.value = {
+        email: registerForm.value.email,
+        password: registerForm.value.password
+      }
+      // 清空之前输入的验证码
+      registerForm.value.verificationCode = ''
+    } else {
+      ElMessage.error('Failed to resend verification code')
+    }
+  } catch (error: unknown) {
+    console.error('Retry verification error:', error)
+    const errorMessage = (error as { err_msg?: string; message?: string })?.err_msg || 
+                         (error as { err_msg?: string; message?: string })?.message || 
+                         'Failed to resend verification code. Please try again.'
+    ElMessage.error(errorMessage)
+  } finally {
+    loading.value = false
+  }
+}
+
+// 重置注册状态
+const resetRegister = () => {
+  registerStep.value = 'input'
+  registerForm.value = {
+    email: '',
+    password: '',
+    verificationCode: ''
+  }
+  // 同时清空原始数据
+  originalRegisterData.value = {
+    email: '',
+    password: ''
+  }
 }
 
 const onBack = () => {
-  router.back()
+  console.log('Back button clicked - navigating to home')
+  router.push('/home')
 }
 </script>
 
@@ -290,6 +512,12 @@ const onBack = () => {
   background-color: var(--primary-hover);
 }
 
+.sign-in-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
 .back-button {
   width: 100%;
   box-sizing: border-box;
@@ -308,6 +536,47 @@ const onBack = () => {
 
 .back-button:hover {
   background-color: #777;
+}
+
+.back-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.verification-input-group {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.verification-input {
+  flex: 1;
+}
+
+.retry-button {
+  padding: 12px 20px;
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 0;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: 1px;
+  transition: background-color 0.3s;
+  white-space: nowrap;
+  min-width: 80px;
+}
+
+.retry-button:hover {
+  background-color: #5a6268;
+}
+
+.retry-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 @media (max-width: 768px) {

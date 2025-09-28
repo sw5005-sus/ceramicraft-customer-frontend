@@ -11,6 +11,14 @@ export default defineConfig({
   plugins: [vue()], // 启用 Vue 3 支持
   server: {
     port: 5173, // Port for `vite dev`
+    proxy: {
+      // 代理所有 /api 请求到后端服务器
+      '/api': {
+        target: 'http://13.214.199.77',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ''),
+      }
+    }
   },
   preview: {
     port: 4173, // Port for `vite preview`
