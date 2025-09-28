@@ -13,11 +13,11 @@
         <div v-if="activeTab === 'login'" class="form-container">
           <div class="form-group">
             <div class="form-label">EMAIL ADDRESS</div>
-            <input type="email" v-model="loginForm.email" class="form-input" />
+            <input type="email" v-model="loginForm.email" class="form-input" placeholder="Enter your email address" />
           </div>
           <div class="form-group">
             <div class="form-label">PASSWORD</div>
-            <input type="password" v-model="loginForm.password" class="form-input" />
+            <input type="password" v-model="loginForm.password" class="form-input" placeholder="Must be more than 8 characters with letters and numbers" />
           </div>
           <div class="form-group form-checkbox">
             <label class="checkbox-container">
@@ -27,29 +27,53 @@
             <span class="forgot">FORGOT PASSWORD?</span>
           </div>
           <div class="form-group">
-            <button class="sign-in-button" @click="onLogin">SIGN IN</button>
-            <button class="back-button" @click="onBack">BACK</button>
+            <button class="sign-in-button" @click="onLogin" :disabled="loading">
+              {{ loading ? 'SIGNING IN...' : 'SIGN IN' }}
+            </button>
+            <button class="back-button" @click="onBack" :disabled="loading">BACK</button>
           </div>
         </div>
         
         <div v-if="activeTab === 'register'" class="form-container">
-          <div class="form-group">
-            <div class="form-label">EMAIL ADDRESS</div>
-            <input type="email" v-model="registerForm.email" class="form-input" />
+          <!-- 步骤1: 输入邮箱和密码 -->
+          <div v-if="registerStep === 'input'">
+            <div class="form-group">
+              <div class="form-label">EMAIL ADDRESS</div>
+              <input type="email" v-model="registerForm.email" class="form-input" placeholder="Enter your email address" />
+            </div>
+            <div class="form-group">
+              <div class="form-label">PASSWORD</div>
+              <input type="password" v-model="registerForm.password" class="form-input" placeholder="Must be more than 8 characters with letters and numbers" />
+            </div>
+            <div class="form-group">
+              <button class="sign-in-button" @click="onRegister" :disabled="loading">
+                {{ loading ? 'REGISTERING...' : 'REGISTER' }}
+              </button>
+              <button class="back-button" @click="onBack" :disabled="loading">BACK</button>
+            </div>
           </div>
-          <div class="form-group">
-            <div class="form-label">PASSWORD</div>
-            <input type="password" v-model="registerForm.password" class="form-input" @input="checkPasswordInput" />
-          </div>
-          <div class="form-group" v-if="showConfirmPassword">
-            <div class="form-label">CONFIRM PASSWORD</div>
-            <input type="password" v-model="registerForm.confirmPassword" class="form-input" />
-          </div>
-          <div class="form-group">
-            <button class="sign-in-button" @click="onRegister">REGISTER</button>
-            <button class="back-button" @click="onBack">BACK</button>
+          
+          <!-- 步骤2: 输入验证码 -->
+          <div v-if="registerStep === 'verification'">
+            <div class="verification-info">
+              <p>A verification code has been sent to:</p>
+              <p class="email-display">{{ registerForm.email }}</p>
+              <p>Please check your email and enter the verification code below.</p>
+            </div>
+            <div class="form-group">
+              <div class="form-label">VERIFICATION CODE</div>
+              <input type="text" v-model="registerForm.verificationCode" class="form-input" placeholder="Enter 6-digit verification code" maxlength="6" />
+            </div>
+            <div class="form-group">
+              <button class="sign-in-button" @click="onActivate" :disabled="loading">
+                {{ loading ? 'ACTIVATING...' : 'ACTIVATE ACCOUNT' }}
+              </button>
+              <button class="back-button" @click="resetRegister" :disabled="loading">START OVER</button>
+            </div>
           </div>
         </div>
+        
+
       </div>
     </div>
   </div>
@@ -59,9 +83,17 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { login, register, activateAccount } from '../api/auth'
+import { isValidEmail, getPasswordError } from '../utils'
+import type { LoginRequest, RegisterRequest, ActivateRequest } from '../types/api'
 
 const router = useRouter()
+const loading = ref(false)
 const activeTab = ref('login')
+
+// 注册流程状态：'input' -> 'verification' -> 'completed'
+const registerStep = ref('input')
+
 const loginForm = ref({
   email: '',
   password: '',
@@ -71,45 +103,147 @@ const loginForm = ref({
 const registerForm = ref({
   email: '',
   password: '',
-  confirmPassword: ''
+  verificationCode: ''
 })
 
-
-const showConfirmPassword = ref(false)
-
-const checkPasswordInput = () => {
-  showConfirmPassword.value = registerForm.value.password.length > 0
-}
-
-
-const onLogin = () => {
+const onLogin = async () => {
   if (!loginForm.value.email || !loginForm.value.password) {
     ElMessage.error('Please enter email and password')
     return
   }
   
-  console.log('Login:', loginForm.value)
-  localStorage.setItem('userToken', 'mock-token-' + Date.now())
+  if (!isValidEmail(loginForm.value.email)) {
+    ElMessage.error('Please enter a valid email address')
+    return
+  }
   
-  // 触发自定义事件通知登录状态变化
-  window.dispatchEvent(new CustomEvent('loginStatusChanged'))
+  // 使用更详细的密码验证
+  const passwordError = getPasswordError(loginForm.value.password)
+  if (passwordError) {
+    ElMessage.error(passwordError)
+    return
+  }
   
-  // 登录成功后跳转到home页面
-  router.push('/home')
+  loading.value = true
+  
+  try {
+    const loginData: LoginRequest = {
+      email: loginForm.value.email,
+      password: loginForm.value.password,
+      id: 0
+    }
+    
+    const response = await login(loginData)
+    
+    // 请求成功就说明登录成功
+    if (response && response.message) {
+      ElMessage.success(response.message)
+      
+      // 登录成功后跳转到home页面
+      router.push('/home')
+    } else {
+      ElMessage.error('Login failed: Invalid response')
+    }
+  } catch (error: any) {
+    console.error('Login error:', error)
+    ElMessage.error(error.err_msg || error.message || 'Login failed. Please try again.')
+  } finally {
+    loading.value = false
+  }
 }
 
-const onRegister = () => {
+// 注册函数
+const onRegister = async () => {
   if (!registerForm.value.email || !registerForm.value.password) {
-    ElMessage.error('Please complete all required fields')
-    return
-  }
-
-  if (showConfirmPassword.value && registerForm.value.password !== registerForm.value.confirmPassword) {
-    ElMessage.error('Passwords do not match')
+    ElMessage.error('Please enter email and password')
     return
   }
   
-  console.log('Register:', registerForm.value)
+  if (!isValidEmail(registerForm.value.email)) {
+    ElMessage.error('Please enter a valid email address')
+    return
+  }
+  
+  const passwordError = getPasswordError(registerForm.value.password)
+  if (passwordError) {
+    ElMessage.error(passwordError)
+    return
+  }
+  
+  loading.value = true
+  
+  try {
+    const registerData: RegisterRequest = {
+      email: registerForm.value.email,
+      password: registerForm.value.password,
+      id: 0
+    }
+    
+    const response = await register(registerData)
+    
+    if (response && response.message) {
+      ElMessage.success(response.message)
+      registerStep.value = 'verification'
+    } else {
+      ElMessage.error('Registration failed: Invalid response')
+    }
+  } catch (error: any) {
+    console.error('Registration error:', error)
+    ElMessage.error(error.err_msg || error.message || 'Registration failed. Please try again.')
+  } finally {
+    loading.value = false
+  }
+}
+
+// 激活账户函数
+const onActivate = async () => {
+  if (!registerForm.value.verificationCode) {
+    ElMessage.error('Please enter the verification code')
+    return
+  }
+  
+  if (registerForm.value.verificationCode.length !== 6) {
+    ElMessage.error('Verification code must be 6 digits')
+    return
+  }
+  
+  loading.value = true
+  
+  try {
+    const activateData: ActivateRequest = {
+      code: registerForm.value.verificationCode
+    }
+    
+    const response = await activateAccount(activateData)
+    
+    if (response && response.message) {
+      ElMessage.success(response.message)
+      
+      // 激活成功后重置表单并切换到登录页
+      resetRegister()
+      activeTab.value = 'login'
+    } else {
+      ElMessage.error('Activation failed: Invalid response')
+    }
+  } catch (error: any) {
+    console.error('Activation error:', error)
+    ElMessage.error(error.err_msg || error.message || 'Activation failed. Please try again.')
+    
+    // 激活失败，返回到初始状态
+    resetRegister()
+  } finally {
+    loading.value = false
+  }
+}
+
+// 重置注册状态
+const resetRegister = () => {
+  registerStep.value = 'input'
+  registerForm.value = {
+    email: '',
+    password: '',
+    verificationCode: ''
+  }
 }
 
 const onBack = () => {
@@ -290,6 +424,12 @@ const onBack = () => {
   background-color: var(--primary-hover);
 }
 
+.sign-in-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
 .back-button {
   width: 100%;
   box-sizing: border-box;
@@ -308,6 +448,34 @@ const onBack = () => {
 
 .back-button:hover {
   background-color: #777;
+}
+
+.back-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.verification-info {
+  text-align: center;
+  margin-bottom: 30px;
+  padding: 20px;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  border-left: 4px solid var(--primary-color);
+}
+
+.verification-info p {
+  margin: 8px 0;
+  color: var(--text-color);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.verification-info .email-display {
+  font-weight: 600;
+  color: var(--primary-color);
+  font-size: 16px;
 }
 
 @media (max-width: 768px) {
