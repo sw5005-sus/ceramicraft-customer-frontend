@@ -30,7 +30,7 @@
             <button class="sign-in-button" @click="onLogin" :disabled="loading">
               {{ loading ? 'SIGNING IN...' : 'SIGN IN' }}
             </button>
-            <button class="back-button" @click="onBack" :disabled="loading">BACK</button>
+            <button class="back-button" @click="onBack" :disabled="loading">BACK TO HOME</button>
           </div>
         </div>
         
@@ -49,20 +49,28 @@
               <button class="sign-in-button" @click="onRegister" :disabled="loading">
                 {{ loading ? 'REGISTERING...' : 'REGISTER' }}
               </button>
-              <button class="back-button" @click="onBack" :disabled="loading">BACK</button>
+              <button class="back-button" @click="onBack" :disabled="loading">BACK TO HOME</button>
             </div>
           </div>
           
           <!-- 步骤2: 输入验证码 -->
           <div v-if="registerStep === 'verification'">
-            <div class="verification-info">
-              <p>A verification code has been sent to:</p>
-              <p class="email-display">{{ registerForm.email }}</p>
-              <p>Please check your email and enter the verification code below.</p>
+            <div class="form-group">
+              <div class="form-label">EMAIL ADDRESS</div>
+              <input type="email" v-model="registerForm.email" class="form-input" placeholder="Enter your email address" />
+            </div>
+            <div class="form-group">
+              <div class="form-label">PASSWORD</div>
+              <input type="password" v-model="registerForm.password" class="form-input" placeholder="Must be more than 8 characters with letters and numbers" />
             </div>
             <div class="form-group">
               <div class="form-label">VERIFICATION CODE</div>
-              <input type="text" v-model="registerForm.verificationCode" class="form-input" placeholder="Enter 6-digit verification code" maxlength="6" />
+              <div class="verification-input-group">
+                <input type="text" v-model="registerForm.verificationCode" class="form-input verification-input" placeholder="Enter 6-digit verification code" maxlength="6" />
+                <button class="retry-button" @click="onRetryVerification" :disabled="loading" title="Resend verification code">
+                  {{ loading ? '...' : 'RETRY' }}
+                </button>
+              </div>
             </div>
             <div class="form-group">
               <button class="sign-in-button" @click="onActivate" :disabled="loading">
@@ -80,7 +88,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { login, register, activateAccount } from '../api/auth'
@@ -104,6 +112,24 @@ const registerForm = ref({
   email: '',
   password: '',
   verificationCode: ''
+})
+
+// 保存原始的邮箱和密码，用于检测变化
+const originalRegisterData = ref({
+  email: '',
+  password: ''
+})
+
+// 监听注册表单的邮箱和密码变化
+watch([() => registerForm.value.email, () => registerForm.value.password], ([newEmail, newPassword]) => {
+  // 如果当前在验证码步骤，并且邮箱或密码发生了变化，则重置到输入状态
+  if (registerStep.value === 'verification') {
+    if (newEmail !== originalRegisterData.value.email || newPassword !== originalRegisterData.value.password) {
+      console.log('Email or password changed, resetting to input step')
+      registerStep.value = 'input'
+      registerForm.value.verificationCode = ''
+    }
+  }
 })
 
 const onLogin = async () => {
@@ -186,6 +212,11 @@ const onRegister = async () => {
     
     if (response && response.message) {
       ElMessage.success(response.message)
+      // 保存当前的邮箱和密码作为原始数据
+      originalRegisterData.value = {
+        email: registerForm.value.email,
+        password: registerForm.value.password
+      }
       registerStep.value = 'verification'
     } else {
       ElMessage.error('Registration failed: Invalid response')
@@ -245,6 +276,48 @@ const onActivate = async () => {
   }
 }
 
+// 重新发送验证码
+const onRetryVerification = async () => {
+  if (!registerForm.value.email || !registerForm.value.password) {
+    ElMessage.error('Missing registration information. Please start over.')
+    resetRegister()
+    return
+  }
+  
+  loading.value = true
+  
+  try {
+    const registerData: RegisterRequest = {
+      email: registerForm.value.email,
+      password: registerForm.value.password,
+      id: 0
+    }
+    
+    const response = await register(registerData)
+    
+    if (response && response.message) {
+      ElMessage.success('Verification code resent to your email')
+      // 更新原始数据为当前数据
+      originalRegisterData.value = {
+        email: registerForm.value.email,
+        password: registerForm.value.password
+      }
+      // 清空之前输入的验证码
+      registerForm.value.verificationCode = ''
+    } else {
+      ElMessage.error('Failed to resend verification code')
+    }
+  } catch (error: unknown) {
+    console.error('Retry verification error:', error)
+    const errorMessage = (error as { err_msg?: string; message?: string })?.err_msg || 
+                         (error as { err_msg?: string; message?: string })?.message || 
+                         'Failed to resend verification code. Please try again.'
+    ElMessage.error(errorMessage)
+  } finally {
+    loading.value = false
+  }
+}
+
 // 重置注册状态
 const resetRegister = () => {
   registerStep.value = 'input'
@@ -253,10 +326,16 @@ const resetRegister = () => {
     password: '',
     verificationCode: ''
   }
+  // 同时清空原始数据
+  originalRegisterData.value = {
+    email: '',
+    password: ''
+  }
 }
 
 const onBack = () => {
-  router.back()
+  console.log('Back button clicked - navigating to home')
+  router.push('/home')
 }
 </script>
 
@@ -465,26 +544,39 @@ const onBack = () => {
   opacity: 0.6;
 }
 
-.verification-info {
-  text-align: center;
-  margin-bottom: 30px;
-  padding: 20px;
-  background-color: #f8f9fa;
-  border-radius: 4px;
-  border-left: 4px solid var(--primary-color);
+.verification-input-group {
+  display: flex;
+  gap: 10px;
+  align-items: center;
 }
 
-.verification-info p {
-  margin: 8px 0;
-  color: var(--text-color);
+.verification-input {
+  flex: 1;
+}
+
+.retry-button {
+  padding: 12px 20px;
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 0;
+  cursor: pointer;
+  font-weight: 500;
   font-size: 14px;
-  line-height: 1.5;
+  letter-spacing: 1px;
+  transition: background-color 0.3s;
+  white-space: nowrap;
+  min-width: 80px;
 }
 
-.verification-info .email-display {
-  font-weight: 600;
-  color: var(--primary-color);
-  font-size: 16px;
+.retry-button:hover {
+  background-color: #5a6268;
+}
+
+.retry-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 @media (max-width: 768px) {
