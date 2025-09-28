@@ -52,7 +52,10 @@ export const activateAccount = async (activateInfo: ActivateRequest): Promise<Ac
 // 用户登出
 export const logout = async (): Promise<void> => {
   try {
-    // 清除本地存储的 token
+    // 调用后端登出API
+    await request.post(API_ENDPOINTS.USER.LOGOUT);
+    
+    // API调用成功后，清除本地存储的 token
     localStorage.removeItem('userToken');
     
     // 触发登出状态变化事件
@@ -62,12 +65,14 @@ export const logout = async (): Promise<void> => {
     
     console.log('Logout successful');
   } catch (error) {
-    console.error('Logout failed:', error);
-    // 即使登出接口失败，也要清除本地 token
+    console.error('Logout API failed:', error);
+    // 即使登出接口失败，也要清除本地 token（前端强制登出）
     localStorage.removeItem('userToken');
     window.dispatchEvent(new CustomEvent('loginStatusChanged', {
       detail: { user: null }
     }));
+    // 重新抛出错误，让调用者知道API调用失败了
+    throw error;
   }
 };
 

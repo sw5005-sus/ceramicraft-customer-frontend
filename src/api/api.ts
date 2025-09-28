@@ -115,19 +115,19 @@ export const apiClient = createApiInstance();
 
 // 通用请求方法
 export const request = {
-  get: <T = any>(url: string, config?: AxiosRequestConfig): Promise<T> =>
+  get: <T = unknown>(url: string, config?: AxiosRequestConfig): Promise<T> =>
     apiClient.get(url, config).then(res => res.data),
   
-  post: <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> =>
+  post: <T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> =>
     apiClient.post(url, data, config).then(res => res.data),
   
-  put: <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> =>
+  put: <T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> =>
     apiClient.put(url, data, config).then(res => res.data),
   
-  delete: <T = any>(url: string, config?: AxiosRequestConfig): Promise<T> =>
+  delete: <T = unknown>(url: string, config?: AxiosRequestConfig): Promise<T> =>
     apiClient.delete(url, config).then(res => res.data),
   
-  patch: <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> =>
+  patch: <T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> =>
     apiClient.patch(url, data, config).then(res => res.data),
 };
 

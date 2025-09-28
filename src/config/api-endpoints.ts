@@ -15,6 +15,7 @@ export const SERVICE_PATHS = {
 export const USER_ENDPOINTS = {
   // 用户认证
   LOGIN: `${SERVICE_PATHS.USER_MS}/login`,
+  LOGOUT: `${SERVICE_PATHS.USER_MS}/logout`,
   
   // 用户注册和激活
   REGISTER: `${SERVICE_PATHS.USER_MS}/users`,

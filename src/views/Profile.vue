@@ -8,7 +8,8 @@
 
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
-import { ElMessageBox } from 'element-plus'
+import { ElMessageBox, ElMessage } from 'element-plus'
+import { logout } from '../api/auth'
 
 const router = useRouter()
 
@@ -20,13 +21,19 @@ const handleLogout = () => {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
     type: 'warning',
-  }).then(() => {
-    // 清除认证状态
-    localStorage.removeItem('userToken')
-    // 触发自定义事件通知登录状态变化
-    window.dispatchEvent(new CustomEvent('loginStatusChanged'))
-    // 跳转到登录页面
-    router.push('/auth/login')
+  }).then(async () => {
+    try {
+      // 调用退出登录API
+      await logout()
+      ElMessage.success('退出登录成功')
+      // 跳转到登录页面
+      router.push('/auth/login')
+    } catch (error) {
+      // API调用失败，但本地状态已经清除，仍然跳转到登录页
+      console.error('Logout API failed:', error)
+      ElMessage.warning('退出登录请求失败，但已清除本地登录状态')
+      router.push('/auth/login')
+    }
   }).catch(() => {
     // 用户取消，无需处理
   })

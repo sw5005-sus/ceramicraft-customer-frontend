@@ -144,9 +144,12 @@ const onLogin = async () => {
     } else {
       ElMessage.error('Login failed: Invalid response')
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Login error:', error)
-    ElMessage.error(error.err_msg || error.message || 'Login failed. Please try again.')
+    const errorMessage = (error as { err_msg?: string; message?: string })?.err_msg || 
+                         (error as { err_msg?: string; message?: string })?.message || 
+                         'Login failed. Please try again.'
+    ElMessage.error(errorMessage)
   } finally {
     loading.value = false
   }
@@ -187,9 +190,12 @@ const onRegister = async () => {
     } else {
       ElMessage.error('Registration failed: Invalid response')
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Registration error:', error)
-    ElMessage.error(error.err_msg || error.message || 'Registration failed. Please try again.')
+    const errorMessage = (error as { err_msg?: string; message?: string })?.err_msg || 
+                         (error as { err_msg?: string; message?: string })?.message || 
+                         'Registration failed. Please try again.'
+    ElMessage.error(errorMessage)
   } finally {
     loading.value = false
   }
@@ -225,9 +231,12 @@ const onActivate = async () => {
     } else {
       ElMessage.error('Activation failed: Invalid response')
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Activation error:', error)
-    ElMessage.error(error.err_msg || error.message || 'Activation failed. Please try again.')
+    const errorMessage = (error as { err_msg?: string; message?: string })?.err_msg || 
+                         (error as { err_msg?: string; message?: string })?.message || 
+                         'Activation failed. Please try again.'
+    ElMessage.error(errorMessage)
     
     // 激活失败，返回到初始状态
     resetRegister()
