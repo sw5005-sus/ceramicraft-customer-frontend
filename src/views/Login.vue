@@ -166,7 +166,7 @@ const onLogin = async () => {
       ElMessage.success(response.message)
       
       // 登录成功后跳转到home页面
-      router.push('/home')
+      router.push({ name: 'CustomerHome' })
     } else {
       ElMessage.error('Login failed: Invalid response')
     }
@@ -335,7 +335,7 @@ const resetRegister = () => {
 
 const onBack = () => {
   console.log('Back button clicked - navigating to home')
-  router.push('/home')
+  router.push({ name: 'CustomerHome' })
 }
 </script>
 
