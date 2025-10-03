@@ -34,8 +34,10 @@ export const PRODUCT_ENDPOINTS = {
   // 商品列表
   LIST: `${SERVICE_PATHS.PRODUCT_MS}/list`,
   
+  // 商品详情
+  DETAIL: `${SERVICE_PATHS.PRODUCT_MS}/product`,
+  
   // 后续可以添加其他商品相关端点
-  // DETAIL: `${SERVICE_PATHS.PRODUCT_MS}/detail`,
   // CATEGORIES: `${SERVICE_PATHS.PRODUCT_MS}/categories`,
 } as const;
 
