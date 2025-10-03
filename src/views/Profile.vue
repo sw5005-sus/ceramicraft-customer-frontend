@@ -27,12 +27,12 @@ const handleLogout = () => {
       await logout()
       ElMessage.success('Logout successful')
       // 跳转到登录页面
-      router.push('/auth/login')
+      router.push({ name: 'CustomerLogin' })
     } catch (error) {
       // API调用失败，但本地状态已经清除，仍然跳转到登录页
       console.error('Logout API failed:', error)
       ElMessage.warning('Logout request failed, but local login state has been cleared')
-      router.push('/auth/login')
+      router.push({ name: 'CustomerLogin' })
     }
   }).catch(() => {
     // 用户取消，无需处理

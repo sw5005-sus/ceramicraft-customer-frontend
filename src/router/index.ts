@@ -1,64 +1,91 @@
 /**
  * @file 路由配置文件
- * @description 定义应用的路由结构，包括主应用路由和认证路由
+ * @description 定义应用的路由结构，统一管理客户端和商户端路由
  */
 
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 import AppLayout from '../layouts/AppLayout.vue'
 
+// 路由前缀常量
+const CUSTOMER_PREFIX = '/customer'
+
 /** 路由配置数组 */
 const routes: Array<RouteRecordRaw> = [
-  // 主应用路由 - 需要认证的页面
+  // 根路径重定向到客户端首页
   {
     path: '/',
-    component: AppLayout,
+    redirect: `${CUSTOMER_PREFIX}/home`
+  },
+  
+  // 客户端路由 - 统一使用前缀
+  {
+    path: CUSTOMER_PREFIX,
     children: [
+      // 使用 AppLayout 的页面
       {
         path: '',
-        redirect: '/home'
+        component: AppLayout,
+        children: [
+          {
+            path: '',
+            redirect: 'home'
+          },
+          {
+            path: 'home',
+            name: 'CustomerHome',
+            component: () => import('../views/Home.vue')
+          },
+          {
+            path: 'login',
+            name: 'CustomerLogin',
+            component: () => import('../views/Login.vue')
+          }
+        ]
+      },
+      
+      // 不使用 AppLayout 的页面（无头部底部）
+      {
+        path: 'cart',
+        name: 'CustomerCart',
+        component: () => import('../views/Cart.vue'),
+        meta: { layout: 'none', requiresAuth: true }
       },
       {
-        path: 'home',
-        name: 'Home',
-        component: () => import('../views/Home.vue')
+        path: 'profile',
+        name: 'CustomerProfile',
+        component: () => import('../views/Profile.vue'),
+        meta: { layout: 'none', requiresAuth: true }
       }
     ]
   },
-  // 购物车和个人中心页面（不使用AppLayout，无头部底部）
+  
+  // 兼容旧路由（用于平滑迁移）
+  {
+    path: '/home',
+    redirect: `${CUSTOMER_PREFIX}/home`
+  },
   {
     path: '/cart',
-    name: 'Cart',
-    component: () => import('../views/Cart.vue'),
-    meta: { layout: 'none', requiresAuth: true }
+    redirect: `${CUSTOMER_PREFIX}/cart`
   },
   {
     path: '/profile',
-    name: 'Profile',
-    component: () => import('../views/Profile.vue'),
-    meta: { layout: 'none', requiresAuth: true }
+    redirect: `${CUSTOMER_PREFIX}/profile`
   },
-
-  
-  // 认证路由 - 登录注册等页面
   {
-    path: '/auth',
-    component: AppLayout,
-    children: [
-      {
-        path: 'login',
-        name: 'Login',
-        component: () => import('../views/Login.vue')
-      }
-    ]
+    path: '/auth/login',
+    redirect: `${CUSTOMER_PREFIX}/login`
   },
   {
     path: '/login',
-    redirect: '/auth/login'
+    redirect: `${CUSTOMER_PREFIX}/login`
   },
+  
+  // 404 处理
   {
     path: '/:pathMatch(.*)*',
-    redirect: '/'
+    redirect: `${CUSTOMER_PREFIX}/home`
   }
 ]
 
@@ -76,13 +103,9 @@ router.beforeEach((to, _from, next) => {
   // 简单的认证状态检查
   const isAuthenticated = localStorage.getItem('userToken')
   
-  // 访问根路径时，直接跳转到home页面
-  if (to.path === '/') {
-    return next('/home')
-  }
   // 如果访问需要认证的页面但未登录，重定向到登录页面
   if (to.meta?.requiresAuth && !isAuthenticated) {
-    return next('/auth/login')
+    return next(`${CUSTOMER_PREFIX}/login`)
   }
 
   // 其他情况正常跳转

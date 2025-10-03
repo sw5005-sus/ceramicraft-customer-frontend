@@ -63,18 +63,18 @@ onUnmounted(() => {
 // 跳转到个人中心或登录页
 const goProfile = () => {
   if (isLoggedIn.value) {
-    router.push('/profile')
+    router.push({ name: 'CustomerProfile' })
   } else {
-    router.push('/auth/login')
+    router.push({ name: 'CustomerLogin' })
   }
 }
 
 // 跳转到购物车
 const goCart = () => {
   if (isLoggedIn.value) {
-    router.push('/cart')
+    router.push({ name: 'CustomerCart' })
   } else {
-    router.push('/auth/login')
+    router.push({ name: 'CustomerLogin' })
   }
 }
 </script>
