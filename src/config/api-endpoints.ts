@@ -6,8 +6,8 @@
 // 基础服务路径
 export const SERVICE_PATHS = {
   USER_MS: '/user-ms/v1/customer',
+  PRODUCT_MS: '/product-ms/v1/customer',
   // 后续可以添加其他微服务路径
-  // PRODUCT_MS: '/product-ms/v1',
   // ORDER_MS: '/order-ms/v1',
 } as const;
 
@@ -29,10 +29,20 @@ export const USER_ENDPOINTS = {
   RESET_PASSWORD: `${SERVICE_PATHS.USER_MS}/password/reset`,
 } as const;
 
+// 商品服务相关端点
+export const PRODUCT_ENDPOINTS = {
+  // 商品列表
+  LIST: `${SERVICE_PATHS.PRODUCT_MS}/list`,
+  
+  // 后续可以添加其他商品相关端点
+  // DETAIL: `${SERVICE_PATHS.PRODUCT_MS}/detail`,
+  // CATEGORIES: `${SERVICE_PATHS.PRODUCT_MS}/categories`,
+} as const;
+
 // 导出所有端点供使用
 export const API_ENDPOINTS = {
   USER: USER_ENDPOINTS,
+  PRODUCT: PRODUCT_ENDPOINTS,
   // 后续可以添加其他服务的端点
-  // PRODUCT: PRODUCT_ENDPOINTS,
   // ORDER: ORDER_ENDPOINTS,
 } as const;
