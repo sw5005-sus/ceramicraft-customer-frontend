@@ -74,7 +74,13 @@
     
     <!-- 商品列表 -->
     <div v-if="!loading && !error" class="products-list">
-      <div v-for="item in products" :key="item.id" class="product-card" style="cursor:pointer;">
+      <div 
+        v-for="(item, index) in products" 
+        :key="item.id || index" 
+        class="product-card" 
+        style="cursor:pointer;"
+        @click="item.id && goToProductDetail(item.id)"
+      >
         <div class="product-img-box">
           <img :src="getProductImage(item)" :alt="item.name" />
           <span v-if="isOutOfStock(item)" class="out-of-stock">OUT OF STOCK</span>
@@ -97,11 +103,15 @@
  */
 
 import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { getProductList } from '../api/product'
 import type { Product, ProductListParams } from '../api/product'
 
 // 默认图片
 import defaultImg from '../assets/defaultimg.png'
+
+// 路由
+const router = useRouter()
 
 // 响应式数据
 const products = ref<Product[]>([])
@@ -230,6 +240,13 @@ const isOutOfStock = (product: Product) => {
 // 获取商品图片，如果没有则使用默认图片
 const getProductImage = (product: Product) => {
   return product.pic_info || defaultImg
+}
+
+// 跳转到商品详情页
+const goToProductDetail = (productId: number | undefined) => {
+  if (productId) {
+    router.push({ name: 'ProductDetail', params: { id: productId.toString() } })
+  }
 }
 
 // 切换分类下拉菜单显示

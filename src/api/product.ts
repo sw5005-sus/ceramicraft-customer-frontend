@@ -12,7 +12,7 @@ export interface ProductListParams {
 
 // 商品信息接口
 export interface Product {
-  id: number;
+  id?: number; // 详情页可能没有ID字段
   name: string;
   category: string;
   price: number;
@@ -20,6 +20,12 @@ export interface Product {
   stock: number;
   pic_info: string;
   status: number;
+  // 详情页额外字段
+  dimensions?: string;
+  material?: string;
+  weight?: string;
+  capacity?: string;
+  care_instructions?: string;
 }
 
 // API 响应数据结构
@@ -119,4 +125,36 @@ export const getSortedProducts = async (
   otherParams: Omit<ProductListParams, 'order_by'> = {}
 ): Promise<ProductListData> => {
   return getProductList({ order_by: orderBy, ...otherParams });
+};
+
+// 商品详情响应接口
+export interface ProductDetailResponse {
+  code: number;
+  err_msg: string;
+  data: Product;
+}
+
+/**
+ * 获取商品详情
+ * @param id 商品ID
+ * @returns Promise<Product> 返回商品详情数据
+ */
+export const getProductDetail = async (id: number | string): Promise<Product> => {
+  try {
+    const url = `${API_ENDPOINTS.PRODUCT.DETAIL}/${id}`;
+    
+    console.log('Fetching product detail with URL:', url);
+    
+    const response = await request.get<ProductDetailResponse>(url);
+    
+    // 检查响应状态
+    if (response.code !== 200) {
+      throw new Error(response.err_msg || '获取商品详情失败');
+    }
+    
+    return response.data;
+  } catch (error) {
+    console.error('Failed to fetch product detail:', error);
+    throw error;
+  }
 };
