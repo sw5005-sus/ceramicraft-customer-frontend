@@ -11,6 +11,8 @@ export default defineConfig({
   plugins: [vue()], // 启用 Vue 3 支持
   server: {
     port: 5173, // Port for `vite dev`
+    host: '0.0.0.0', // Listen on all network interfaces
+    allowedHosts: ['all'], // Allow all hosts for development mode
     proxy: {
       // 代理所有 /api 请求到后端服务器
       '/api': {
@@ -23,5 +25,6 @@ export default defineConfig({
   preview: {
     port: 4173, // Port for `vite preview`
     host: '0.0.0.0', // Listen on all network interfaces
+    allowedHosts: ['all'], // Allow all hosts for preview mode
   },
 })
