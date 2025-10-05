@@ -1,11 +1,12 @@
 <template>
   <div class="profile-page">
     <!-- 加载状态 -->
-    <div v-if="loading" class="loading-container">
-      <el-icon class="is-loading">
+        <!-- 加载状态 -->
+    <div v-if="loading || addressLoading" class="loading-container">
+      <el-icon class="loading-icon">
         <Loading />
       </el-icon>
-      <span>Loading profile...</span>
+      <p>{{ loading ? 'Loading profile...' : 'Loading addresses...' }}</p>
     </div>
 
     <!-- 错误状态 -->
@@ -59,114 +60,110 @@
           </div>
           
           <div class="user-details">
+            <!-- 姓名编辑区域 -->
             <div v-if="editingName" class="name-edit-container">
               <el-input 
+                ref="nameInputRef"
                 v-model="editName" 
                 placeholder="Enter your name"
                 class="name-input"
                 @keyup.enter="saveName"
                 @keyup.esc="cancelEditName"
-                size="large"
+                @blur="saveName"
+                size="default"
               />
-              <div class="name-edit-actions">
-                <el-button size="small" type="primary" @click="saveName" :loading="updating">Save</el-button>
-                <el-button size="small" @click="cancelEditName">Cancel</el-button>
-              </div>
             </div>
-            <h2 v-else 
-               class="user-name" 
-               :class="{ 'placeholder-name': !userProfile.name || !userProfile.name.trim() }"
-               @click="startEditName">
-              {{ userProfile.name && userProfile.name.trim() ? userProfile.name : 'Click to set your name' }}
-            </h2>
-            <p class="user-member-type">Premium Member</p>
+            <div v-else class="user-name-section">
+              <h2 class="user-name" 
+                 :class="{ 'placeholder-name': !userProfile.name || !userProfile.name.trim() }"
+                 @click="startEditName">
+                {{ userProfile.name && userProfile.name.trim() ? userProfile.name : 'Click to set your name' }}
+                <span class="user-id">ID: {{ userProfile.id }}</span>
+              </h2>
+            </div>
+            
+            <!-- 邮箱显示区域（不可编辑） -->
+            <p class="user-email">
+              {{ userProfile.email }}
+            </p>
           </div>
         </div>
       </div>
 
-      <!-- 客户详情 -->
-      <div class="details-section">
-        <h3 class="section-title">Customer Details</h3>
-        
-        <div class="detail-row">
-          <label class="detail-label">Full Name</label>
-          <div class="detail-value-container">
-            <span class="detail-value">{{ userProfile.name || '' }}</span>
-            <el-button type="text" class="edit-btn" @click="startEditName">
-              <el-icon><Edit /></el-icon>
-            </el-button>
-          </div>
-        </div>
 
-        <div class="detail-row">
-          <label class="detail-label">Email</label>
-          <div class="detail-value-container">
-            <span class="detail-value">{{ userProfile.email }}</span>
-            <div class="verification-badge">
-              <el-icon size="20"><Check /></el-icon>
-            </div>
-          </div>
-        </div>
-
-        <div class="detail-row">
-          <label class="detail-label">Default Address</label>
-          <div class="detail-value-container">
-            <span class="detail-value">
-              {{ userProfile.default_address ? formatAddress(userProfile.default_address) : '' }}
-            </span>
-            <el-button type="text" class="edit-btn">
-              <el-icon><Edit /></el-icon>
-            </el-button>
-          </div>
-        </div>
-      </div>
 
       <!-- 地址管理 -->
-      <div class="addresses-section" v-if="userProfile.default_address">
+      <div class="addresses-section">
         <div class="section-header">
           <h3 class="section-title">My Addresses</h3>
         </div>
 
-        <div class="address-grid">
-          <!-- 默认地址 -->
-          <div class="address-card default-address">
+        <!-- 有地址的情况 -->
+        <div v-if="userAddresses.length > 0" class="address-grid">
+          <!-- 地址列表 -->
+          <div v-for="address in userAddresses" :key="address.id" class="address-card" :class="{ 'default-address': address.is_default }">
             <div class="address-header">
-              <div class="address-type">
-                <el-icon><House /></el-icon>
-                <span>Home</span>
+              <div class="address-name-header">
+                <strong>{{ address.first_name }} {{ address.last_name }}</strong>
+                <div v-if="address.is_default" class="default-badge-inline">Default</div>
               </div>
               <div class="address-actions">
-                <el-button type="text" size="small">
+                <el-button type="text" size="small" @click="editAddress(address)">
                   <el-icon><Edit /></el-icon>
                 </el-button>
-                <el-button type="text" size="small">
+                <el-button type="text" size="small" @click="deleteAddress(address)">
                   <el-icon><Delete /></el-icon>
                 </el-button>
               </div>
             </div>
             <div class="address-content">
-              <p class="address-line" v-if="userProfile.default_address.detail">
-                {{ userProfile.default_address.detail }}
-              </p>
-              <p class="address-line" v-if="userProfile.default_address.city || userProfile.default_address.province || userProfile.default_address.zip_code">
-                {{ [userProfile.default_address.city, userProfile.default_address.province, userProfile.default_address.zip_code].filter(Boolean).join(', ') }}
-              </p>
-              <p class="address-line" v-if="userProfile.default_address.country">
-                {{ userProfile.default_address.country }}
-              </p>
-              <div class="default-badge">Default Address</div>
+              <div class="address-phone" v-if="address.contact_phone">
+                <span>{{ address.contact_phone }}</span>
+              </div>
+              <div class="address-detail" v-if="address.detail">
+                <p>{{ address.detail }}</p>
+              </div>
+              <div class="address-location">
+                <p>{{ [address.city, address.province, address.zip_code].filter(Boolean).join(', ') }}</p>
+                <p v-if="address.country">{{ address.country }}</p>
+              </div>
             </div>
           </div>
 
           <!-- 添加新地址按钮 -->
           <div class="add-address-card">
-            <el-button type="primary" plain class="add-address-btn">
+            <el-button type="primary" plain class="add-address-btn" @click="openAddressForm">
               <el-icon><Plus /></el-icon>
-              <span>Add New Address</span>
+              <span>Add Address</span>
+            </el-button>
+          </div>
+        </div>
+
+        <!-- 没有默认地址的情况 -->
+        <div v-else class="no-address-container">
+          <div class="no-address-content">
+            <el-icon size="48" class="no-address-icon">
+              <House />
+            </el-icon>
+            <h4 class="no-address-title">No address found</h4>
+            <p class="no-address-desc">Add your shipping address to make checkout faster</p>
+            <el-button type="primary" size="large" @click="openAddressForm" class="add-first-address-btn">
+              <el-icon><Plus /></el-icon>
+              Add Address
             </el-button>
           </div>
         </div>
       </div>
+
+      <!-- 地址表单弹窗 -->
+      <AddressFormDialog 
+        v-model:visible="showAddressForm"
+        :is-edit-mode="isEditMode"
+        :loading="updating"
+        :address-data="editingAddress"
+        @save="handleAddressSave"
+        @close="handleAddressDialogClose"
+      />
 
       <!-- 操作按钮 -->
       <div class="action-buttons">
@@ -182,20 +179,23 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessageBox, ElMessage, ElButton, ElIcon, ElInput } from 'element-plus'
-import { Loading, User, Edit, Check, House, Delete, Plus, Camera } from '@element-plus/icons-vue'
+import { Loading, User, Edit, House, Delete, Plus, Camera } from '@element-plus/icons-vue'
 import { logout } from '../api/auth'
+import { createUserAddress, updateUserAddress, deleteUserAddress } from '../api/address'
 import { useUserProfile } from '../composables/useUserProfile'
 import { useImageUpload } from '../composables/useImageUpload'
 import { getAvatarUrl } from '../utils/image'
+import AddressFormDialog from '../components/AddressFormDialog.vue'
 import type { UserAddress } from '../types/api'
+import type { AddressFormData } from '../components/AddressFormDialog.vue'
 
 const router = useRouter()
 
 // 使用用户资料 composable
-const { userProfile, loading, updating, error, loadUserProfile, updateProfile } = useUserProfile()
+const { userProfile, userAddresses, loading, updating, addressLoading, error, loadUserProfile, loadUserAddresses, updateProfile } = useUserProfile()
 
 // 使用图片上传 composable
 const { uploading: uploadingImage, uploadAvatar, handleFileSelect } = useImageUpload()
@@ -204,25 +204,18 @@ const { uploading: uploadingImage, uploadAvatar, handleFileSelect } = useImageUp
 const editingName = ref(false)
 const editName = ref('')
 
+// 地址表单状态
+const showAddressForm = ref(false)
+const editingAddress = ref<UserAddress | null>(null) // 正在编辑的地址
+const isEditMode = ref(false) // 是否为编辑模式
+
 // 文件上传引用
 const fileInputRef = ref<HTMLInputElement>()
 
-/**
- * 格式化地址显示
- */
-const formatAddress = (address: UserAddress): string => {
-  if (!address) return ''
-  
-  const parts = [
-    address.detail?.trim(),
-    address.city?.trim(),
-    address.province?.trim(),
-    address.zip_code?.trim(),
-    address.country?.trim()
-  ].filter(part => part && part.length > 0)
-  
-  return parts.join(', ')
-}
+// 输入框引用
+const nameInputRef = ref()
+
+
 
 /**
  * 开始编辑姓名
@@ -230,6 +223,9 @@ const formatAddress = (address: UserAddress): string => {
 const startEditName = () => {
   editName.value = userProfile.value?.name || ''
   editingName.value = true
+  nextTick(() => {
+    nameInputRef.value?.focus()
+  })
 }
 
 /**
@@ -237,7 +233,9 @@ const startEditName = () => {
  */
 const saveName = async () => {
   const trimmedName = editName.value.trim()
-  await updateProfile({ name: trimmedName })
+  if (trimmedName !== (userProfile.value?.name || '')) {
+    await updateProfile({ name: trimmedName })
+  }
   editingName.value = false
 }
 
@@ -247,6 +245,135 @@ const saveName = async () => {
 const cancelEditName = () => {
   editingName.value = false
   editName.value = ''
+}
+
+
+
+/**
+ * 打开地址表单
+ */
+const openAddressForm = () => {
+  showAddressForm.value = true
+}
+
+/**
+ * 编辑地址
+ */
+const editAddress = (address: UserAddress) => {
+  editingAddress.value = address
+  isEditMode.value = true
+  showAddressForm.value = true
+}
+
+/**
+ * 关闭地址表单
+ */
+const closeAddressForm = () => {
+  showAddressForm.value = false
+  isEditMode.value = false
+  editingAddress.value = null
+}
+
+/**
+ * 处理地址保存
+ */
+const handleAddressSave = async (formData: AddressFormData) => {
+  try {
+    if (isEditMode.value && editingAddress.value) {
+      // 编辑模式：更新现有地址
+      const updateData = {
+        id: editingAddress.value.id,
+        user_id: editingAddress.value.user_id,
+        first_name: formData.first_name,
+        last_name: formData.last_name,
+        contact_phone: formData.contact_phone,
+        detail: formData.detail,
+        city: formData.city,
+        province: formData.province,
+        country: formData.country,
+        zip_code: formData.zip_code,
+        is_default: editingAddress.value.is_default
+      }
+      
+      console.log('Updating address data:', updateData)
+      
+      const updatedAddress = await updateUserAddress(editingAddress.value.id, updateData)
+      console.log('Address updated successfully:', updatedAddress)
+      
+      ElMessage.success('Address updated successfully')
+    } else {
+      // 新增模式：创建新地址
+      const isFirstAddress = userAddresses.value.length === 0
+      const addressData = {
+        first_name: formData.first_name,
+        last_name: formData.last_name,
+        contact_phone: formData.contact_phone,
+        detail: formData.detail,
+        city: formData.city,
+        province: formData.province,
+        country: formData.country,
+        zip_code: formData.zip_code,
+        is_default: isFirstAddress
+      }
+      
+      console.log('Creating address data:', addressData)
+      
+      const newAddress = await createUserAddress(addressData)
+      console.log('Address created successfully:', newAddress)
+      
+      ElMessage.success('Address created successfully')
+    }
+    
+    // 刷新地址列表以获取最新的地址信息
+    await loadUserAddresses()
+    
+    // 关闭对话框
+    showAddressForm.value = false
+    closeAddressForm()
+  } catch (error) {
+    console.error('Failed to save address:', error)
+    ElMessage.error('Failed to save address')
+  }
+}
+
+/**
+ * 处理地址弹窗关闭
+ */
+const handleAddressDialogClose = () => {
+  closeAddressForm()
+}
+
+/**
+ * 删除地址
+ */
+const deleteAddress = (address: UserAddress) => {
+  ElMessageBox.confirm(
+    `Are you sure you want to delete this address?<br><strong>${address.first_name} ${address.last_name}</strong><br>${address.detail}`,
+    'Delete Address',
+    {
+      confirmButtonText: 'Delete',
+      cancelButtonText: 'Cancel',
+      type: 'warning',
+      dangerouslyUseHTMLString: true,
+      confirmButtonClass: 'el-button--danger'
+    }
+  ).then(async () => {
+    try {
+      console.log('Deleting address:', address.id)
+      
+      await deleteUserAddress(address.id)
+      
+      ElMessage.success('Address deleted successfully')
+      
+      // 刷新地址列表
+      await loadUserAddresses()
+    } catch (error) {
+      console.error('Failed to delete address:', error)
+      ElMessage.error('Failed to delete address')
+    }
+  }).catch(() => {
+    // 用户取消删除，无需处理
+  })
 }
 
 /**
@@ -307,7 +434,6 @@ const handleLogout = () => {
   max-width: 1000px;
   margin: 0 auto;
   padding: 24px;
-  background: #f5f5f5;
   min-height: 100vh;
 }
 
@@ -332,6 +458,16 @@ const handleLogout = () => {
   background: white;
   border-radius: 12px;
   margin: 40px 0;
+}
+
+.error-container .el-button--primary {
+  background: #c75d35 !important;
+  border-color: #c75d35 !important;
+}
+
+.error-container .el-button--primary:hover {
+  background: #a84a2a !important;
+  border-color: #a84a2a !important;
 }
 
 .profile-container {
@@ -368,11 +504,20 @@ const handleLogout = () => {
 .avatar-container {
   position: relative;
   cursor: pointer;
-  transition: transform 0.2s;
+  transition: all 0.2s;
+  border-radius: 50%;
+  width: 86px;
+  height: 86px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .avatar-container:hover {
   transform: scale(1.05);
+  box-shadow: 0 8px 25px rgba(199, 93, 53, 0.3);
+  border-radius: 50%;
 }
 
 .avatar-upload-overlay {
@@ -430,6 +575,11 @@ const handleLogout = () => {
   flex-grow: 1;
 }
 
+.user-name-section {
+  display: flex;
+  flex-direction: column;
+}
+
 .user-name {
   font-size: 20px;
   font-weight: 600;
@@ -437,6 +587,9 @@ const handleLogout = () => {
   margin: 0 0 4px 0;
   cursor: pointer;
   transition: color 0.2s;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
 }
 
 .user-name.placeholder-name {
@@ -446,106 +599,55 @@ const handleLogout = () => {
 }
 
 .user-name.placeholder-name:hover {
-  color: #1976d2;
+  color: #d97706;
+}
+
+.user-id {
+  font-size: 12px;
+  font-weight: 400;
+  color: #9ca3af;
+  font-style: normal;
 }
 
 .name-edit-container {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
   max-width: 300px;
 }
 
 .name-input {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 600;
 }
 
-.name-edit-actions {
-  display: flex;
-  gap: 8px;
+.name-input :deep(.el-input__wrapper) {
+  padding: 8px 12px;
+  border: 1px solid #e1e8ed;
+  border-radius: 6px;
+  box-shadow: none;
+  background: #fff;
 }
 
-.user-member-type {
-  color: #8c9197;
+.name-input :deep(.el-input__wrapper:hover) {
+  border-color: #c75d35;
+}
+
+.name-input :deep(.el-input__wrapper.is-focus) {
+  border-color: #c75d35;
+  box-shadow: 0 0 0 2px rgba(199, 93, 53, 0.1);
+}
+
+.name-input :deep(.el-input__inner) {
+  font-size: 18px;
+  font-weight: 600;
+  color: #222;
+}
+
+.user-email {
+  color: #6b7280;
   font-size: 14px;
   margin: 0;
 }
 
-/* Details Section */
-.details-section {
-  background: white;
-  border-radius: 12px;
-  padding: 32px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-}
 
-.section-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #1a1a1a;
-  margin: 0 0 24px 0;
-}
-
-.detail-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 0;
-  border-bottom: 1px solid #f0f2f5;
-}
-
-.detail-row:last-child {
-  border-bottom: none;
-}
-
-.detail-label {
-  font-size: 14px;
-  color: #8c9197;
-  font-weight: 500;
-  min-width: 120px;
-}
-
-.detail-value-container {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-grow: 1;
-  justify-content: flex-end;
-}
-
-.detail-value {
-  color: #1a1a1a;
-  font-size: 14px;
-  text-align: right;
-  min-height: 20px;
-}
-
-.detail-value:empty::after {
-  content: '-';
-  color: #d1d5db;
-  font-style: italic;
-}
-
-.edit-btn {
-  color: #666;
-  padding: 4px;
-}
-
-.edit-btn:hover {
-  color: #1976d2;
-}
-
-.verification-badge {
-  color: #4caf50;
-  background: #f1f8e9;
-  border-radius: 50%;
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
 
 /* Addresses Section */
 .addresses-section {
@@ -562,6 +664,13 @@ const handleLogout = () => {
   margin-bottom: 24px;
 }
 
+.section-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+}
+
 .address-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -573,11 +682,14 @@ const handleLogout = () => {
   border-radius: 8px;
   padding: 20px;
   background: #fafbfc;
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
 }
 
 .default-address {
-  border-color: #1976d2;
-  background: #f3f8ff;
+  border-color: #d97706;
+  background: #fef3e2;
 }
 
 .address-header {
@@ -587,21 +699,74 @@ const handleLogout = () => {
   margin-bottom: 12px;
 }
 
-.address-type {
+.address-name-header {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   color: #1a1a1a;
-  font-weight: 500;
+  font-weight: 600;
+  font-size: 16px;
 }
 
 .address-actions {
   display: flex;
-  gap: 4px;
+  gap: 0px;
+  justify-content: flex-end;
+}
+
+.address-actions .el-button {
+  color: #4a5568 !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  padding: 2px !important;
+  min-width: 36px !important;
+  height: 36px !important;
+}
+
+.address-actions .el-button:hover {
+  color: #2d3748 !important;
+}
+
+.address-actions .el-button:last-child:hover {
+  color: #dc2626 !important;
+}
+
+.address-actions .el-icon {
+  font-size: 18px !important;
+  font-weight: bold !important;
 }
 
 .address-content {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.address-phone {
+  color: #4b5563;
+  font-size: 14px;
+}
+
+.address-detail {
+  color: #4b5563;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.address-detail p {
+  margin: 0;
+}
+
+.address-location {
+  color: #4b5563;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.address-location p {
+  margin: 0 0 2px 0;
 }
 
 .address-line {
@@ -612,7 +777,7 @@ const handleLogout = () => {
 }
 
 .default-badge {
-  background: #ff6b35;
+  background: #c75d35;
   color: white;
   font-size: 11px;
   padding: 4px 8px;
@@ -620,6 +785,17 @@ const handleLogout = () => {
   font-weight: 500;
   display: inline-block;
   margin-top: 8px;
+}
+
+.default-badge-inline {
+  background: #c75d35;
+  color: white;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 12px;
+  font-weight: 500;
+  display: inline-block;
+  white-space: nowrap;
 }
 
 .add-address-card {
@@ -631,11 +807,13 @@ const handleLogout = () => {
   justify-content: center;
   background: #fafbfc;
   transition: all 0.2s;
+  min-height: 150px;
+  height: auto;
 }
 
 .add-address-card:hover {
-  border-color: #1976d2;
-  background: #f3f8ff;
+  border-color: #c75d35;
+  background: #faf6f3;
 }
 
 .add-address-btn {
@@ -643,14 +821,104 @@ const handleLogout = () => {
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  border: none;
-  background: none;
-  color: #1976d2;
+  border: 1px solid #c75d35 !important;
+  background: none !important;
+  color: #c75d35 !important;
   font-size: 14px;
 }
 
+.add-address-btn:hover {
+  background: #c75d35 !important;
+  color: white !important;
+}
+
 .add-address-btn span {
-  color: #1976d2;
+  color: inherit;
+}
+
+/* No Address State */
+.no-address-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+  background: #fafbfc;
+  border: 2px dashed #d1d5db;
+  border-radius: 12px;
+}
+
+.no-address-content {
+  text-align: center;
+  max-width: 400px;
+  padding: 40px 20px;
+}
+
+.no-address-icon {
+  color: #9ca3af;
+  margin-bottom: 16px;
+}
+
+.no-address-title {
+  color: #374151;
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+}
+
+.no-address-desc {
+  color: #6b7280;
+  font-size: 14px;
+  margin: 0 0 24px 0;
+  line-height: 1.5;
+}
+
+.add-first-address-btn {
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: 500;
+  background: #c75d35 !important;
+  border-color: #c75d35 !important;
+}
+
+.add-first-address-btn:hover {
+  background: #a84a2a !important;
+  border-color: #a84a2a !important;
+}
+
+/* Address Form Dialog */
+.address-dialog .el-dialog__header {
+  background: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.address-dialog .el-dialog__title {
+  color: #1a1a1a;
+  font-weight: 600;
+}
+
+.address-form {
+  padding: 20px 0;
+}
+
+.form-row {
+  display: flex;
+  gap: 16px;
+}
+
+.form-item-half {
+  flex: 1;
+}
+
+.form-item-half .el-form-item__label {
+  width: 80px !important;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 20px;
+  border-top: 1px solid #e9ecef;
 }
 
 /* Action Buttons */
@@ -662,6 +930,22 @@ const handleLogout = () => {
   background: white;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.action-buttons .el-button--danger {
+  background-color: #c75d35;
+  border-color: #c75d35;
+  color: white;
+}
+
+.action-buttons .el-button--danger:hover {
+  background-color: #b15530;
+  border-color: #b15530;
+}
+
+.action-buttons .el-button--danger:active {
+  background-color: #a04d2b;
+  border-color: #a04d2b;
 }
 
 /* Responsive */
@@ -703,5 +987,40 @@ const handleLogout = () => {
   .action-buttons {
     flex-direction: column;
   }
+}
+
+
+
+.empty-address-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #666;
+  background: #fafafa;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+.empty-address-state h4 {
+  color: #333;
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.empty-address-state p {
+  margin: 0 0 24px 0;
+  font-size: 14px;
+  color: #666;
+}
+
+.add-address-button {
+  background: #ff6b35;
+  border-color: #ff6b35;
+  color: white;
+}
+
+.add-address-button:hover {
+  background: #e55a2e;
+  border-color: #e55a2e;
 }
 </style>

@@ -49,6 +49,34 @@ export interface UserAddress {
   zip_code: string;
 }
 
+// 新增用户地址请求类型
+export interface CreateAddressRequest {
+  city: string;
+  contact_phone: string;
+  country: string;
+  detail: string;
+  first_name: string;
+  is_default: boolean;
+  last_name: string;
+  province: string;
+  zip_code: string;
+}
+
+// 更新用户地址请求类型
+export interface UpdateAddressRequest {
+  city: string;
+  contact_phone: string;
+  country: string;
+  detail: string;
+  first_name: string;
+  id: number;
+  is_default: boolean;
+  last_name: string;
+  province: string;
+  user_id: number;
+  zip_code: string;
+}
+
 // 用户信息类型
 export interface UserProfile {
   avatar: string;

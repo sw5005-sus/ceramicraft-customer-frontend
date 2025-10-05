@@ -47,7 +47,7 @@
           <h1 class="product-title">{{ product.name }}</h1>
           
           <div class="product-price">
-            <span class="price">${{ product.price }}</span>
+            <span class="price">¥{{ formatPrice(product.price) }}</span>
           </div>
 
           <!-- 数量选择 -->
@@ -127,6 +127,7 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getProductDetail } from '../api/product'
 import type { Product } from '../api/product'
+import { S3_CONFIG } from '../config/api-endpoints'
 
 // 默认图片
 import defaultImg from '../assets/defaultimg.png'
@@ -176,7 +177,20 @@ const isOutOfStock = (product: Product) => {
 
 // 获取商品图片
 const getProductImage = (product: Product) => {
-  return product.pic_info || defaultImg
+  if (product.pic_info && product.pic_info.trim()) {
+    // 如果pic_info已经是完整的URL，直接返回
+    if (product.pic_info.startsWith('http://') || product.pic_info.startsWith('https://')) {
+      return product.pic_info
+    }
+    // 否则拼接S3基础URL
+    return `${S3_CONFIG.BASE_URL}${product.pic_info}`
+  }
+  return defaultImg
+}
+
+// 格式化价格，将分转换为元并保留两位小数
+const formatPrice = (price: number) => {
+  return (price / 100).toFixed(2)
 }
 
 // 检查登录状态

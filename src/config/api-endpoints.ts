@@ -26,6 +26,9 @@ export const USER_ENDPOINTS = {
   PROFILE: `${SERVICE_PATHS.USER_MS}/profile`,
   USER_SELF: `${SERVICE_PATHS.USER_MS}/users/self`,
   
+  // 地址管理
+  USER_ADDRESSES: `${SERVICE_PATHS.USER_MS}/users/self/addresses`,
+  
   // 密码管理
   CHANGE_PASSWORD: `${SERVICE_PATHS.USER_MS}/password`,
   RESET_PASSWORD: `${SERVICE_PATHS.USER_MS}/password/reset`,

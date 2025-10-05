@@ -1,5 +1,5 @@
 import { apiClient } from './api';
-import { API_ENDPOINTS } from '../config/api-endpoints';
+import { IMAGE_ENDPOINTS } from '../config/api-endpoints';
 import type { ImageUploadRequest, ImageUploadResponse } from '../types/api';
 
 /**
@@ -11,7 +11,7 @@ export const getImageUploadUrl = async (imageType: string): Promise<ImageUploadR
   };
   
   const response = await apiClient.post<ImageUploadResponse>(
-    API_ENDPOINTS.IMAGE.UPLOAD_URL, 
+    IMAGE_ENDPOINTS.UPLOAD_URL, 
     requestData
   );
   
