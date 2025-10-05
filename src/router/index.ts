@@ -45,6 +45,12 @@ const routes: Array<RouteRecordRaw> = [
             path: 'login',
             name: 'CustomerLogin',
             component: () => import('../views/Login.vue')
+          },
+          {
+            path: 'profile',
+            name: 'CustomerProfile',
+            component: () => import('../views/Profile.vue'),
+            meta: { requiresAuth: true }
           }
         ]
       },
@@ -54,12 +60,6 @@ const routes: Array<RouteRecordRaw> = [
         path: 'cart',
         name: 'CustomerCart',
         component: () => import('../views/Cart.vue'),
-        meta: { layout: 'none', requiresAuth: true }
-      },
-      {
-        path: 'profile',
-        name: 'CustomerProfile',
-        component: () => import('../views/Profile.vue'),
         meta: { layout: 'none', requiresAuth: true }
       }
     ]

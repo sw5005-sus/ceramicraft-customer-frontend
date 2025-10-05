@@ -7,6 +7,7 @@
 export const SERVICE_PATHS = {
   USER_MS: '/user-ms/v1/customer',
   PRODUCT_MS: '/product-ms/v1/customer',
+  PRODUCT_MS_MERCHANT: '/product-ms/v1/merchant',
   // 后续可以添加其他微服务路径
   // ORDER_MS: '/order-ms/v1',
 } as const;
@@ -23,6 +24,10 @@ export const USER_ENDPOINTS = {
   
   // 用户信息管理
   PROFILE: `${SERVICE_PATHS.USER_MS}/profile`,
+  USER_SELF: `${SERVICE_PATHS.USER_MS}/users/self`,
+  
+  // 地址管理
+  USER_ADDRESSES: `${SERVICE_PATHS.USER_MS}/users/self/addresses`,
   
   // 密码管理
   CHANGE_PASSWORD: `${SERVICE_PATHS.USER_MS}/password`,
@@ -39,6 +44,17 @@ export const PRODUCT_ENDPOINTS = {
   
   // 后续可以添加其他商品相关端点
   // CATEGORIES: `${SERVICE_PATHS.PRODUCT_MS}/categories`,
+} as const;
+
+// 图片上传相关端点
+export const IMAGE_ENDPOINTS = {
+  // 获取图片上传URL
+  UPLOAD_URL: `${SERVICE_PATHS.PRODUCT_MS_MERCHANT}/images/upload-urls`,
+} as const;
+
+// S3存储配置
+export const S3_CONFIG = {
+  BASE_URL: 'https://ceramicraft.s3.ap-southeast-1.amazonaws.com/',
 } as const;
 
 // 导出所有端点供使用

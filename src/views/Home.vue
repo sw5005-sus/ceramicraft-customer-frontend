@@ -88,7 +88,7 @@
         <div class="product-info">
           <div class="product-artist">{{ item.category }}</div>
           <div class="product-title">{{ item.name }}</div>
-          <div class="product-price">¥{{ item.price }}</div>
+          <div class="product-price">¥{{ formatPrice(item.price) }}</div>
           <div class="product-stock">Stock: {{ item.stock }}</div>
         </div>
       </div>
@@ -106,6 +106,7 @@ import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { getProductList } from '../api/product'
 import type { Product, ProductListParams } from '../api/product'
+import { S3_CONFIG } from '../config/api-endpoints'
 
 // 默认图片
 import defaultImg from '../assets/defaultimg.png'
@@ -239,7 +240,20 @@ const isOutOfStock = (product: Product) => {
 
 // 获取商品图片，如果没有则使用默认图片
 const getProductImage = (product: Product) => {
-  return product.pic_info || defaultImg
+  if (product.pic_info && product.pic_info.trim()) {
+    // 如果pic_info已经是完整的URL，直接返回
+    if (product.pic_info.startsWith('http://') || product.pic_info.startsWith('https://')) {
+      return product.pic_info
+    }
+    // 否则拼接S3基础URL
+    return `${S3_CONFIG.BASE_URL}${product.pic_info}`
+  }
+  return defaultImg
+}
+
+// 格式化价格，将分转换为元并保留两位小数
+const formatPrice = (price: number) => {
+  return (price / 100).toFixed(2)
 }
 
 // 跳转到商品详情页
