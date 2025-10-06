@@ -16,7 +16,7 @@ export default defineConfig({
     proxy: {
       // 代理所有 /api 请求到后端服务器
       '/api': {
-        target: 'http://13.214.199.77',
+        target: 'http://47.129.118.167',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
       }

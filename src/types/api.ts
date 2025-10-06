@@ -7,7 +7,8 @@ export interface LoginRequest {
 
 // 登录响应格式
 export interface LoginResponse {
-  message: string;
+  code: number;
+  data: string;
 }
 
 // 用户注册相关类型
@@ -19,7 +20,8 @@ export interface RegisterRequest {
 
 // 注册响应格式
 export interface RegisterResponse {
-  message: string;
+  code: number;
+  data: string;
 }
 
 // 验证码激活请求
@@ -29,7 +31,8 @@ export interface ActivateRequest {
 
 // 激活响应格式
 export interface ActivateResponse {
-  message: string;
+  code: number;
+  data: string;
 }
 
 // 用户地址信息类型
