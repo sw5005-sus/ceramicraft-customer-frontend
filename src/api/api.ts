@@ -9,7 +9,7 @@ const createApiInstance = (): AxiosInstance => {
   // 开发环境使用代理，生产环境直接访问后端
   const baseURL = import.meta.env.DEV 
     ? '/api'  // 开发环境使用 Vite 代理
-    : 'http://13.214.199.77';  // 生产环境直接访问
+    : 'http://47.129.118.167';  // 生产环境直接访问
 
   const instance = axios.create({
     baseURL,
