@@ -51,7 +51,7 @@ jobs:
         run: |
           docker stop ceramicraft-customer-frontend || true
           docker rm ceramicraft-customer-frontend || true
-          docker run -d --name ceramicraft-customer-frontend --network ceramicraft-network -p 4174:4173 "${DH_USERNAME}/ceramicraft-customer-frontend:${{ github.event.inputs.version }}"
+          docker run -d --name ceramicraft-customer-frontend --network ceramicraft-network "${DH_USERNAME}/ceramicraft-customer-frontend:${{ github.event.inputs.version }}"
   restart:
     if: ${{ github.event.inputs.command == 'restart' }} # ← 仅在 restart 时运行
     runs-on: self-hosted
