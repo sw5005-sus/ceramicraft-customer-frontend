@@ -171,6 +171,28 @@ export interface UpdateCartItemResponse {
   err_msg: string;
 }
 
+// 删除购物车商品的响应类型
+export interface RemoveCartItemResponse {
+  code: number;
+  data: string;
+  err_msg: string;
+}
+
+// 购物车价格估算数据类型
+export interface CartPriceEstimate {
+  product_price: number;
+  shipping_price: number;
+  tax: number;
+  total: number;
+}
+
+// 购物车价格估算响应类型
+export interface CartPriceEstimateResponse {
+  code: number;
+  data: CartPriceEstimate;
+  err_msg: string;
+}
+
 // 购物车数据类型
 export interface CartData {
   cart_items: CartItem[];

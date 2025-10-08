@@ -149,11 +149,9 @@
           
           <div class="account-actions">
             <el-button type="primary" size="default" @click="showTopUpDialog = true">
-              <el-icon><Plus /></el-icon>
               Top Up
             </el-button>
             <el-button size="default" class="transaction-history-btn">
-              <el-icon><List /></el-icon>
               Transaction History
             </el-button>
           </div>
@@ -311,7 +309,7 @@
 import { ref, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessageBox, ElMessage, ElButton, ElIcon, ElInput } from 'element-plus'
-import { Loading, User, Edit, House, Delete, Plus, Camera, Refresh, Warning, CreditCard, List, InfoFilled } from '@element-plus/icons-vue'
+import { Loading, User, Edit, House, Delete, Plus, Camera, Refresh, Warning, CreditCard, InfoFilled } from '@element-plus/icons-vue'
 import { logout } from '../api/auth'
 import { createUserAddress, updateUserAddress, deleteUserAddress } from '../api/address'
 import { useUserProfile } from '../composables/useUserProfile'

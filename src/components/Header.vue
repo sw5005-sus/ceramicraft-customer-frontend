@@ -7,6 +7,25 @@
         </div>
         <span>CERAMIC-CRAFT</span>
       </div>
+      
+      <!-- 导航标签 -->
+      <div class="nav-tabs">
+        <div 
+          class="nav-tab" 
+          :class="{ active: currentRoute === 'Home' }"
+          @click="goToRoute('Home')"
+        >
+          Home
+        </div>
+        <div 
+          class="nav-tab" 
+          :class="{ active: currentRoute === 'Orders' }"
+          @click="goToRoute('Orders')"
+        >
+          Orders
+        </div>
+      </div>
+      
       <div class="actions">
         <div class="user-status">
           <el-icon class="action-icon" @click="goProfile" :title="isLoggedIn ? 'Profile' : 'Login'">
@@ -14,8 +33,8 @@
           </el-icon>
           <span v-if="!isLoggedIn" class="login-status">Not Logged In</span>
         </div>
-        <div class="cart-icon" @click="goCart">
-          <el-icon class="action-icon"><ShoppingCart /></el-icon>
+        <div class="order-icon" @click="goOrders">
+          <el-icon class="action-icon"><List /></el-icon>
         </div>
       </div>
     </div>
@@ -28,14 +47,25 @@
  * @description 包含品牌logo、导航菜单和用户操作区域的头部组件
  */
 
-import { ref, onMounted, onUnmounted } from 'vue'
-import { User, ShoppingCart } from '@element-plus/icons-vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { User, List } from '@element-plus/icons-vue'
+import { useRouter, useRoute } from 'vue-router'
 
 const router = useRouter()
+const route = useRoute()
 
 // 登录状态
 const isLoggedIn = ref(!!localStorage.getItem('userToken'))
+
+// 当前路由状态
+const currentRoute = computed(() => {
+  if (route.name === 'CustomerHome' || route.name === 'Home') {
+    return 'Home'
+  } else if (route.name === 'CustomerOrders' || route.name === 'Orders') {
+    return 'Orders'
+  }
+  return ''
+})
 
 // 监听localStorage变化的函数
 const handleStorageChange = () => {
@@ -68,12 +98,25 @@ const goProfile = () => {
   }
 }
 
-// 跳转到购物车
-const goCart = () => {
+// 跳转到订单页面
+const goOrders = () => {
   if (isLoggedIn.value) {
-    router.push({ name: 'CustomerCart' })
+    router.push({ name: 'CustomerOrders' })
   } else {
     router.push({ name: 'CustomerLogin' })
+  }
+}
+
+// 导航标签跳转函数
+const goToRoute = (routeName: string) => {
+  if (routeName === 'Home') {
+    router.push({ name: 'CustomerHome' })
+  } else if (routeName === 'Orders') {
+    if (isLoggedIn.value) {
+      router.push({ name: 'CustomerOrders' })
+    } else {
+      router.push({ name: 'CustomerLogin' })
+    }
   }
 }
 </script>
@@ -107,6 +150,34 @@ const goCart = () => {
   align-items: center;
   gap: 10px;
   min-width: 180px; /* 设置最小宽度，与右侧操作区域保持平衡 */
+}
+
+/* 导航标签样式 */
+.nav-tabs {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  flex: 1;
+  justify-content: center;
+}
+
+.nav-tab {
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 500;
+  color: #666;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.nav-tab:hover {
+  color: #c75d35;
+}
+
+.nav-tab.active {
+  color: #c75d35;
+  font-weight: 600;
 }
 
 .logo-image {
@@ -170,7 +241,7 @@ const goCart = () => {
   height: 24px; /* 固定高度 */
 }
 
-.cart-icon {
+.order-icon {
   cursor: pointer;
 }
 </style>

@@ -1,10 +1,5 @@
 <template>
   <div class="product-detail-page">
-    <!-- 返回按钮 -->
-    <div class="breadcrumb">
-      <BackButton />
-    </div>
-
     <!-- 加载状态 -->
     <div v-if="loading" class="loading-state">
       <p>Loading product details...</p>
@@ -127,7 +122,6 @@ import { getProductDetail } from '../api/product'
 import { addToCart as addToCartAPI } from '../api/cart'
 import type { Product } from '../api/product'
 import { S3_CONFIG } from '../config/api-endpoints'
-import BackButton from '../components/BackButton.vue'
 
 // 默认图片
 import defaultImg from '../assets/defaultimg.png'
@@ -272,11 +266,6 @@ onMounted(() => {
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
-}
-
-/* 面包屑导航 */
-.breadcrumb {
-  margin-bottom: 30px;
 }
 
 /* 加载和错误状态 */

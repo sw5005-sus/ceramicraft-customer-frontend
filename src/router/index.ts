@@ -57,6 +57,12 @@ const routes: Array<RouteRecordRaw> = [
             name: 'CustomerCart',
             component: () => import('../views/Cart.vue'),
             meta: { requiresAuth: true }
+          },
+          {
+            path: 'orders',
+            name: 'CustomerOrders',
+            component: () => import('../views/Orders.vue'),
+            meta: { requiresAuth: true }
           }
         ]
       }
