@@ -12,7 +12,7 @@ export interface ProductListParams {
 
 // 商品信息接口
 export interface Product {
-  id?: number; // 详情页可能没有ID字段
+  id?: number; // 商品ID，在列表中有，详情页可能没有
   name: string;
   category: string;
   price: number;

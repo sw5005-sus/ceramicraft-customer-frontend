@@ -210,8 +210,8 @@ const onRegister = async () => {
     
     const response = await register(registerData)
     
-    if (response && response.code === 0) {
-      ElMessage.success(response.data || 'Registration successful')
+    if (response && response.message) {
+      ElMessage.success(response.message)
       // 保存当前的邮箱和密码作为原始数据
       originalRegisterData.value = {
         email: registerForm.value.email,
@@ -253,8 +253,8 @@ const onActivate = async () => {
     
     const response = await activateAccount(activateData)
     
-    if (response && response.code === 0) {
-      ElMessage.success(response.data || 'Account activated successfully')
+    if (response && response.message) {
+      ElMessage.success(response.message)
       
       // 激活成功后重置表单并切换到登录页
       resetRegister()
@@ -295,7 +295,7 @@ const onRetryVerification = async () => {
     
     const response = await register(registerData)
     
-    if (response && response.code === 0) {
+    if (response && response.message) {
       ElMessage.success('Verification code resent to your email')
       // 更新原始数据为当前数据
       originalRegisterData.value = {

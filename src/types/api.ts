@@ -20,8 +20,7 @@ export interface RegisterRequest {
 
 // 注册响应格式
 export interface RegisterResponse {
-  code: number;
-  data: string;
+  message: string;
 }
 
 // 验证码激活请求
@@ -31,8 +30,7 @@ export interface ActivateRequest {
 
 // 激活响应格式
 export interface ActivateResponse {
-  code: number;
-  data: string;
+  message: string;
 }
 
 // 用户地址信息类型
@@ -111,6 +109,50 @@ export interface ImageUploadRequest {
 export interface ImageUploadResponse {
   image_id: string;
   upload_url: string;
+}
+
+// 购物车商品项类型
+export interface CartItem {
+  id: number;
+  product_id: number;
+  product_name: string;
+  product_price: number;
+  product_image: string;
+  quantity: number;
+  selected: boolean;
+  created_at: number;
+  updated_at: number;
+  user_id: number;
+}
+
+// 添加商品到购物车的请求类型
+export interface AddToCartRequest {
+  id?: number;
+  product_id: number;
+  quantity: number;
+  selected: boolean;
+  user_id?: number;
+}
+
+// 添加商品到购物车的响应类型
+export interface AddToCartResponse {
+  code: number;
+  data: unknown; // 根据错误信息，实际返回的data可能是商品详情或其他格式
+  err_msg: string;
+}
+
+// 购物车数据类型
+export interface CartData {
+  cart_items: CartItem[];
+  selected_item_count: number;
+  selected_price: number;
+}
+
+// 购物车API响应类型
+export interface CartResponse {
+  code: number;
+  err_msg: string;
+  data: CartData;
 }
 
 // 错误响应类型

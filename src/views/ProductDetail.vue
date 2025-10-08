@@ -78,10 +78,10 @@
           <div class="action-buttons">
             <button 
               class="add-to-cart-btn"
-              :disabled="isOutOfStock(product)"
+              :disabled="isOutOfStock(product) || addingToCart"
               @click="addToCart"
             >
-              {{ isLoggedIn() ? 'ADD TO CART' : 'LOGIN TO ADD TO CART' }}
+              {{ addingToCart ? 'ADDING...' : (isLoggedIn() ? 'ADD TO CART' : 'LOGIN TO ADD TO CART') }}
             </button>
             <button 
               class="buy-now-btn"
@@ -125,7 +125,9 @@
 
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
 import { getProductDetail } from '../api/product'
+import { addToCart as addToCartAPI } from '../api/cart'
 import type { Product } from '../api/product'
 import { S3_CONFIG } from '../config/api-endpoints'
 
@@ -141,6 +143,7 @@ const product = ref<Product | null>(null)
 const loading = ref(false)
 const error = ref<string | null>(null)
 const quantity = ref(1)
+const addingToCart = ref(false)
 
 // 获取商品详情
 const fetchProductDetail = async () => {
@@ -157,6 +160,8 @@ const fetchProductDetail = async () => {
     const result = await getProductDetail(productId)
     product.value = result
     console.log('Product detail fetched successfully:', result)
+    console.log('Product ID field:', result.id)
+    console.log('All product fields:', Object.keys(result))
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Failed to fetch product details'
     console.error('Failed to fetch product details:', err)
@@ -212,7 +217,7 @@ const decreaseQuantity = () => {
 }
 
 // 添加到购物车
-const addToCart = () => {
+const addToCart = async () => {
   if (!product.value) return
   
   // 检查登录状态
@@ -222,11 +227,27 @@ const addToCart = () => {
     return
   }
   
-  // TODO: 实现添加到购物车逻辑
-  console.log(`Adding ${quantity.value} of product ${product.value.id} to cart`)
+  // 防止重复点击
+  if (addingToCart.value) return
   
-  // 这里可以添加成功提示
-  alert(`Added ${quantity.value} item(s) to cart!`)
+  addingToCart.value = true
+  
+  try {
+    // 使用路由参数中的产品ID，而不是product对象中的ID
+    const productId = route.params.id as string
+    if (!productId) {
+      throw new Error('Product ID is required')
+    }
+    
+    await addToCartAPI(parseInt(productId), quantity.value)
+    ElMessage.success(`Added ${quantity.value} item(s) to cart!`)
+    console.log(`Successfully added ${quantity.value} of product ${productId} to cart`)
+  } catch (error) {
+    console.error('Failed to add to cart:', error)
+    ElMessage.error('Failed to add item to cart')
+  } finally {
+    addingToCart.value = false
+  }
 }
 
 // 立即购买
