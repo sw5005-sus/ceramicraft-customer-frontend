@@ -17,7 +17,7 @@
           </div>
           <div class="form-group">
             <div class="form-label">PASSWORD</div>
-            <input type="password" v-model="loginForm.password" class="form-input" placeholder="Must be more than 8 characters with letters and numbers" />
+            <input type="password" v-model="loginForm.password" class="form-input" placeholder="Must be at least 8 characters with letters and numbers" />
           </div>
           <div class="form-group form-checkbox">
             <label class="checkbox-container">
@@ -43,7 +43,7 @@
             </div>
             <div class="form-group">
               <div class="form-label">PASSWORD</div>
-              <input type="password" v-model="registerForm.password" class="form-input" placeholder="Must be more than 8 characters with letters and numbers" />
+              <input type="password" v-model="registerForm.password" class="form-input" placeholder="Must be at least 8 characters with letters and numbers" />
             </div>
             <div class="form-group">
               <button class="sign-in-button" @click="onRegister" :disabled="loading">
@@ -61,7 +61,7 @@
             </div>
             <div class="form-group">
               <div class="form-label">PASSWORD</div>
-              <input type="password" v-model="registerForm.password" class="form-input" placeholder="Must be more than 8 characters with letters and numbers" />
+              <input type="password" v-model="registerForm.password" class="form-input" placeholder="Must be at least 8 characters with letters and numbers" />
             </div>
             <div class="form-group">
               <div class="form-label">VERIFICATION CODE</div>

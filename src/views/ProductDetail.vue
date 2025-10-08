@@ -2,10 +2,7 @@
   <div class="product-detail-page">
     <!-- 返回按钮 -->
     <div class="breadcrumb">
-      <button class="back-btn" @click="goBack">
-        <span class="back-icon">←</span>
-        <span>Back</span>
-      </button>
+      <BackButton />
     </div>
 
     <!-- 加载状态 -->
@@ -130,6 +127,7 @@ import { getProductDetail } from '../api/product'
 import { addToCart as addToCartAPI } from '../api/cart'
 import type { Product } from '../api/product'
 import { S3_CONFIG } from '../config/api-endpoints'
+import BackButton from '../components/BackButton.vue'
 
 // 默认图片
 import defaultImg from '../assets/defaultimg.png'
@@ -168,11 +166,6 @@ const fetchProductDetail = async () => {
   } finally {
     loading.value = false
   }
-}
-
-// 返回上一页
-const goBack = () => {
-  router.back()
 }
 
 // 检查商品是否缺货
@@ -284,28 +277,6 @@ onMounted(() => {
 /* 面包屑导航 */
 .breadcrumb {
   margin-bottom: 30px;
-}
-
-.back-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: none;
-  border: none;
-  color: #666;
-  cursor: pointer;
-  font-size: 14px;
-  padding: 8px 0;
-  transition: color 0.2s;
-}
-
-.back-btn:hover {
-  color: #c75d35;
-}
-
-.back-icon {
-  font-size: 16px;
-  font-weight: bold;
 }
 
 /* 加载和错误状态 */

@@ -10,10 +10,10 @@ export const isValidEmail = (email: string): boolean => {
   return emailRegex.test(email);
 };
 
-// 验证密码强度（大于8位，必须包含英文字母和数字）
+// 验证密码强度（至少8位，必须包含英文字母和数字）
 export const isValidPassword = (password: string): boolean => {
-  // 检查长度是否大于8位
-  if (password.length <= 8) {
+  // 检查长度是否至少8位
+  if (password.length < 8) {
     return false;
   }
   
@@ -32,8 +32,8 @@ export const getPasswordError = (password: string): string | null => {
     return 'Password is required';
   }
   
-  if (password.length <= 8) {
-    return 'Password must be more than 8 characters long';
+  if (password.length < 8) {
+    return 'Password must be at least 8 characters long';
   }
   
   const hasLetter = /[a-zA-Z]/.test(password);

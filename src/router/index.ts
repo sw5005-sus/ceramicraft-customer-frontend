@@ -51,16 +51,14 @@ const routes: Array<RouteRecordRaw> = [
             name: 'CustomerProfile',
             component: () => import('../views/Profile.vue'),
             meta: { requiresAuth: true }
+          },
+          {
+            path: 'cart',
+            name: 'CustomerCart',
+            component: () => import('../views/Cart.vue'),
+            meta: { requiresAuth: true }
           }
         ]
-      },
-      
-      // 不使用 AppLayout 的页面（无头部底部）
-      {
-        path: 'cart',
-        name: 'CustomerCart',
-        component: () => import('../views/Cart.vue'),
-        meta: { layout: 'none', requiresAuth: true }
       }
     ]
   },

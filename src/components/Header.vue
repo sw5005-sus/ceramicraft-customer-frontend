@@ -16,7 +16,6 @@
         </div>
         <div class="cart-icon" @click="goCart">
           <el-icon class="action-icon"><ShoppingCart /></el-icon>
-          <span class="cart-count">0</span>
         </div>
       </div>
     </div>
@@ -172,21 +171,6 @@ const goCart = () => {
 }
 
 .cart-icon {
-  position: relative;
-}
-
-.cart-count {
-  position: absolute;
-  top: -8px;
-  right: -8px;
-  background-color: #c75d35;
-  color: white;
-  font-size: 10px;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  cursor: pointer;
 }
 </style>

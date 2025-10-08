@@ -1,5 +1,10 @@
 <template>
   <div class="cart-page">
+    <!-- 返回按钮 -->
+    <div class="page-navigation">
+      <BackButton text="Continue Shopping" to="/customer/home" />
+    </div>
+
     <!-- 页面标题 -->
     <div class="page-header">
       <h1 class="page-title">Shopping Cart</h1>
@@ -91,16 +96,17 @@
           <!-- 商品图片 -->
           <div class="item-image">
             <img 
-              :src="item.product_image || '/src/assets/defaultimg.png'" 
-              :alt="item.product_name"
+              :src="getProductImageUrl(item.product_info.pic_info)" 
+              :alt="item.product_info.name"
               @error="handleImageError"
             />
           </div>
 
           <!-- 商品信息 -->
           <div class="item-info">
-            <h4 class="item-name">{{ item.product_name }}</h4>
-            <p class="item-price">{{ formatPrice(item.product_price) }}</p>
+            <h4 class="item-name">{{ item.product_info.name }}</h4>
+            <p class="item-category">{{ item.product_info.category }}</p>
+            <p class="item-price">{{ formatPrice(item.product_info.price) }}</p>
           </div>
 
           <!-- 数量控制 -->
@@ -118,7 +124,7 @@
           <!-- 小计 -->
           <div class="item-subtotal">
             <span class="subtotal-price">
-              {{ formatPrice(calculateItemSubtotal(item)) }}
+              {{ formatPrice(item.total_price) }}
             </span>
           </div>
 
@@ -168,6 +174,7 @@
 import { ElMessageBox, ElMessage } from 'element-plus'
 import { Loading, Warning, ShoppingCart, Refresh, Delete } from '@element-plus/icons-vue'
 import { useCart } from '../composables/useCart'
+import BackButton from '../components/BackButton.vue'
 // import { useRouter } from 'vue-router'
 // const router = useRouter()
 
@@ -187,9 +194,17 @@ const {
   selectAllItems,
   unselectAllItems,
   clearCartItems,
-  formatPrice,
-  calculateItemSubtotal
+  formatPrice
 } = useCart()
+
+/**
+ * 获取商品图片URL
+ */
+const getProductImageUrl = (picInfo: string) => {
+  if (!picInfo) return '/src/assets/defaultimg.png'
+  // 假设图片存储在某个CDN或者静态资源目录
+  return `/public/img/${picInfo}`
+}
 
 /**
  * 处理图片加载错误
@@ -249,7 +264,12 @@ const handleCheckout = () => {
   max-width: 1200px;
   margin: 0 auto;
   padding: 24px;
-  min-height: 100vh;
+  min-height: calc(100vh - 100px); /* 减去header和footer的高度 */
+}
+
+/* 页面导航 */
+.page-navigation {
+  margin-bottom: 24px;
 }
 
 /* 页面标题 */
@@ -426,14 +446,25 @@ const handleCheckout = () => {
   font-size: 16px;
   font-weight: 500;
   color: #1a1a1a;
-  margin: 0 0 8px 0;
+  margin: 0 0 4px 0;
   line-height: 1.4;
+}
+
+.item-category {
+  font-size: 12px;
+  color: #9ca3af;
+  margin: 0 0 4px 0;
+  background: #f3f4f6;
+  padding: 2px 6px;
+  border-radius: 4px;
+  display: inline-block;
 }
 
 .item-price {
   font-size: 14px;
   color: #6b7280;
   margin: 0;
+  font-weight: 500;
 }
 
 /* 数量控制 */

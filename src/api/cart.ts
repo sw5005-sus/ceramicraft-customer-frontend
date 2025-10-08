@@ -1,6 +1,6 @@
 import apiClient from './api'
 import { PRODUCT_ENDPOINTS } from '../config/api-endpoints'
-import type { CartResponse, CartData, AddToCartRequest, AddToCartResponse } from '../types/api'
+import type { CartResponse, CartData, AddToCartRequest, AddToCartResponse, UpdateCartItemRequest, UpdateCartItemResponse } from '../types/api'
 
 /**
  * 获取购物车内容
@@ -53,13 +53,11 @@ export const addToCart = async (productId: number, quantity: number = 1): Promis
 }
 
 /**
- * 更新购物车商品数量
+ * 更新购物车商品信息
  */
-export const updateCartItem = async (itemId: number, quantity: number): Promise<void> => {
+export const updateCartItem = async (itemId: number, updateData: UpdateCartItemRequest): Promise<void> => {
   try {
-    const response = await apiClient.put(`${PRODUCT_ENDPOINTS.CART}/${itemId}`, {
-      quantity
-    })
+    const response = await apiClient.put<UpdateCartItemResponse>(`${PRODUCT_ENDPOINTS.CART}/items/${itemId}`, updateData)
     
     if (response.data.code !== 200) {
       throw new Error(response.data.err_msg || 'Failed to update cart item')
@@ -89,11 +87,9 @@ export const removeFromCart = async (itemId: number): Promise<void> => {
 /**
  * 选择/取消选择购物车商品
  */
-export const toggleCartItemSelection = async (itemId: number, selected: boolean): Promise<void> => {
+export const toggleCartItemSelection = async (itemId: number, updateData: UpdateCartItemRequest): Promise<void> => {
   try {
-    const response = await apiClient.patch(`${PRODUCT_ENDPOINTS.CART}/${itemId}/select`, {
-      selected
-    })
+    const response = await apiClient.put<UpdateCartItemResponse>(`${PRODUCT_ENDPOINTS.CART}/items/${itemId}`, updateData)
     
     if (response.data.code !== 200) {
       throw new Error(response.data.err_msg || 'Failed to toggle item selection')

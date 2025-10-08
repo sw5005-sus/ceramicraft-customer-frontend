@@ -8,7 +8,7 @@ import {
   toggleCartItemSelection,
   clearCart
 } from '../api/cart'
-import type { CartData, CartItem } from '../types/api'
+import type { CartData } from '../types/api'
 
 /**
  * 购物车管理 Composable
@@ -78,8 +78,21 @@ export const useCart = () => {
       return
     }
 
+    // 找到当前的购物车项目
+    const currentItem = cartItems.value.find(item => item.id === itemId)
+    if (!currentItem) {
+      ElMessage.error('Cart item not found')
+      return
+    }
+
     try {
-      await updateCartItem(itemId, quantity)
+      await updateCartItem(itemId, {
+        id: currentItem.id,
+        product_id: currentItem.product_info.id,
+        quantity: quantity,
+        selected: currentItem.selected,
+        user_id: 0 // 这里可能需要从用户状态中获取
+      })
       await loadCart() // 重新加载购物车
     } catch (err: unknown) {
       const errorMessage = (err as Error)?.message || 'Failed to update item quantity'
@@ -109,8 +122,21 @@ export const useCart = () => {
    * 切换商品选择状态
    */
   const toggleItemSelection = async (itemId: number, selected: boolean) => {
+    // 找到当前的购物车项目
+    const currentItem = cartItems.value.find(item => item.id === itemId)
+    if (!currentItem) {
+      ElMessage.error('Cart item not found')
+      return
+    }
+
     try {
-      await toggleCartItemSelection(itemId, selected)
+      await toggleCartItemSelection(itemId, {
+        id: currentItem.id,
+        product_id: currentItem.product_info.id,
+        quantity: currentItem.quantity,
+        selected: selected,
+        user_id: 0 // 这里可能需要从用户状态中获取
+      })
       await loadCart() // 重新加载购物车
     } catch (err: unknown) {
       const errorMessage = (err as Error)?.message || 'Failed to toggle item selection'
@@ -126,7 +152,13 @@ export const useCart = () => {
   const selectAllItems = async () => {
     try {
       const promises = cartItems.value.map(item => 
-        toggleCartItemSelection(item.id, true)
+        toggleCartItemSelection(item.id, {
+          id: item.id,
+          product_id: item.product_info.id,
+          quantity: item.quantity,
+          selected: true,
+          user_id: 0
+        })
       )
       await Promise.all(promises)
       await loadCart() // 重新加载购物车
@@ -142,7 +174,13 @@ export const useCart = () => {
   const unselectAllItems = async () => {
     try {
       const promises = cartItems.value.map(item => 
-        toggleCartItemSelection(item.id, false)
+        toggleCartItemSelection(item.id, {
+          id: item.id,
+          product_id: item.product_info.id,
+          quantity: item.quantity,
+          selected: false,
+          user_id: 0
+        })
       )
       await Promise.all(promises)
       await loadCart() // 重新加载购物车
@@ -172,14 +210,7 @@ export const useCart = () => {
    * 格式化价格显示
    */
   const formatPrice = (price: number): string => {
-    return `¥${price.toFixed(2)}`
-  }
-
-  /**
-   * 计算商品小计
-   */
-  const calculateItemSubtotal = (item: CartItem): number => {
-    return item.product_price * item.quantity
+    return `¥${(price / 100).toFixed(2)}`
   }
 
   // 组件挂载时自动加载
@@ -209,7 +240,6 @@ export const useCart = () => {
     selectAllItems,
     unselectAllItems,
     clearCartItems,
-    formatPrice,
-    calculateItemSubtotal
+    formatPrice
   }
 }
