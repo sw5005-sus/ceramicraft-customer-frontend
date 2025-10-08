@@ -8,6 +8,7 @@ export const SERVICE_PATHS = {
   USER_MS: '/user-ms/v1/customer',
   PRODUCT_MS: '/product-ms/v1/customer',
   PRODUCT_MS_MERCHANT: '/product-ms/v1/merchant',
+  PAYMENT_MS: '/payment-ms/v1/customer',
   // 后续可以添加其他微服务路径
   // ORDER_MS: '/order-ms/v1',
 } as const;
@@ -42,6 +43,10 @@ export const PRODUCT_ENDPOINTS = {
   // 商品详情
   DETAIL: `${SERVICE_PATHS.PRODUCT_MS}/product`,
   
+  // 购物车相关
+  CART: `${SERVICE_PATHS.PRODUCT_MS}/cart`,
+  CART_ITEMS: `${SERVICE_PATHS.PRODUCT_MS}/cart/items`,
+  
   // 后续可以添加其他商品相关端点
   // CATEGORIES: `${SERVICE_PATHS.PRODUCT_MS}/categories`,
 } as const;
@@ -50,6 +55,14 @@ export const PRODUCT_ENDPOINTS = {
 export const IMAGE_ENDPOINTS = {
   // 获取图片上传URL
   UPLOAD_URL: `${SERVICE_PATHS.PRODUCT_MS_MERCHANT}/images/upload-urls`,
+} as const;
+
+// 支付服务相关端点
+export const PAYMENT_ENDPOINTS = {
+  // 支付账户信息
+  PAY_ACCOUNT_SELF: `${SERVICE_PATHS.PAYMENT_MS}/pay-accounts/self`,
+  // 账户充值
+  TOP_UP: `${SERVICE_PATHS.PAYMENT_MS}/pay-accounts/self/top-ups`,
 } as const;
 
 // S3存储配置
@@ -61,6 +74,7 @@ export const S3_CONFIG = {
 export const API_ENDPOINTS = {
   USER: USER_ENDPOINTS,
   PRODUCT: PRODUCT_ENDPOINTS,
+  PAYMENT: PAYMENT_ENDPOINTS,
   // 后续可以添加其他服务的端点
   // ORDER: ORDER_ENDPOINTS,
 } as const;

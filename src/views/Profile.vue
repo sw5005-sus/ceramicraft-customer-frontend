@@ -90,7 +90,87 @@
         </div>
       </div>
 
+      <!-- 支付账户信息 -->
+      <div class="payment-account-section">
+        <div class="section-header">
+          <h3 class="section-title">Payment Account</h3>
+          <el-button 
+            @click="loadPayAccount" 
+            :loading="payAccountLoading" 
+            type="text" 
+            size="small"
+            class="refresh-btn"
+          >
+            <el-icon><Refresh /></el-icon>
+            Refresh
+          </el-button>
+        </div>
 
+        <!-- 支付账户加载状态 -->
+        <div v-if="payAccountLoading && !payAccount" class="payment-loading">
+          <el-icon class="loading-icon">
+            <Loading />
+          </el-icon>
+          <span>Loading payment account...</span>
+        </div>
+
+        <!-- 支付账户错误状态 -->
+        <div v-else-if="payAccountError && !payAccount" class="payment-error">
+          <el-icon class="error-icon">
+            <Warning />
+          </el-icon>
+          <div class="error-content">
+            <div class="error-message">{{ payAccountError }}</div>
+            <div class="error-hint" v-if="payAccountError.includes('unavailable')">
+              The payment service is being set up. This feature will be available soon.
+            </div>
+          </div>
+          <el-button @click="loadPayAccount" type="text" size="small">
+            Try Again
+          </el-button>
+        </div>
+
+        <!-- 支付账户信息展示 -->
+        <div v-else-if="payAccount" class="payment-account-card">
+          <div class="account-info-grid">
+            <div class="account-item">
+              <div class="account-label">Account Number</div>
+              <div class="account-value">{{ payAccount.account_no }}</div>
+            </div>
+            <div class="account-item">
+              <div class="account-label">Current Balance</div>
+              <div class="account-value balance-value">{{ formatBalance(payAccount.balance) }}</div>
+            </div>
+            <div class="account-item">
+              <div class="account-label">Last Updated</div>
+              <div class="account-value">{{ formatDate(payAccount.updated_at) }}</div>
+            </div>
+          </div>
+          
+          <div class="account-actions">
+            <el-button type="primary" size="default" @click="showTopUpDialog = true">
+              <el-icon><Plus /></el-icon>
+              Top Up
+            </el-button>
+            <el-button size="default" class="transaction-history-btn">
+              <el-icon><List /></el-icon>
+              Transaction History
+            </el-button>
+          </div>
+        </div>
+
+        <!-- 暂无支付账户 -->
+        <div v-else class="no-payment-account">
+          <el-icon class="no-account-icon">
+            <CreditCard />
+          </el-icon>
+          <p class="no-account-text">No payment account found</p>
+          <el-button @click="loadPayAccount" type="primary" size="default">
+            <el-icon><Refresh /></el-icon>
+            Check Again
+          </el-button>
+        </div>
+      </div>
 
       <!-- 地址管理 -->
       <div class="addresses-section">
@@ -165,6 +245,55 @@
         @close="handleAddressDialogClose"
       />
 
+      <!-- Top-up充值弹窗 -->
+      <el-dialog
+        v-model="showTopUpDialog"
+        title="Top Up Account"
+        width="400px"
+        :close-on-click-modal="false"
+        :close-on-press-escape="false"
+      >
+        <el-form 
+          ref="topUpFormRef"
+          :model="topUpForm" 
+          :rules="topUpRules"
+          label-width="120px"
+          @submit.prevent="handleTopUp"
+        >
+          <el-form-item label="Redeem Code" prop="redeemCode">
+            <el-input
+              v-model="topUpForm.redeemCode"
+              placeholder="Enter your redeem code"
+              :maxlength="20"
+              clearable
+              :disabled="topUpLoading"
+            />
+          </el-form-item>
+          
+          <div class="top-up-info">
+            <p class="info-text">
+              <el-icon><InfoFilled /></el-icon>
+              Enter a valid redeem code to add funds to your account.
+            </p>
+          </div>
+        </el-form>
+
+        <template #footer>
+          <div class="dialog-footer">
+            <el-button @click="handleTopUpCancel" :disabled="topUpLoading">
+              Cancel
+            </el-button>
+            <el-button 
+              type="primary" 
+              @click="handleTopUp"
+              :loading="topUpLoading"
+            >
+              {{ topUpLoading ? 'Processing...' : 'Top Up' }}
+            </el-button>
+          </div>
+        </template>
+      </el-dialog>
+
       <!-- 操作按钮 -->
       <div class="action-buttons">
         <el-button @click="loadUserProfile" :loading="loading" type="default">
@@ -182,11 +311,12 @@
 import { ref, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessageBox, ElMessage, ElButton, ElIcon, ElInput } from 'element-plus'
-import { Loading, User, Edit, House, Delete, Plus, Camera } from '@element-plus/icons-vue'
+import { Loading, User, Edit, House, Delete, Plus, Camera, Refresh, Warning, CreditCard, List, InfoFilled } from '@element-plus/icons-vue'
 import { logout } from '../api/auth'
 import { createUserAddress, updateUserAddress, deleteUserAddress } from '../api/address'
 import { useUserProfile } from '../composables/useUserProfile'
 import { useImageUpload } from '../composables/useImageUpload'
+import { usePaymentAccount } from '../composables/usePaymentAccount'
 import { getAvatarUrl } from '../utils/image'
 import AddressFormDialog from '../components/AddressFormDialog.vue'
 import type { UserAddress } from '../types/api'
@@ -200,6 +330,9 @@ const { userProfile, userAddresses, loading, updating, addressLoading, error, lo
 // 使用图片上传 composable
 const { uploading: uploadingImage, uploadAvatar, handleFileSelect } = useImageUpload()
 
+// 使用支付账户 composable
+const { payAccount, loading: payAccountLoading, error: payAccountError, topUpLoading, loadPayAccount, formatBalance, formatDate, performTopUp } = usePaymentAccount()
+
 // 编辑状态
 const editingName = ref(false)
 const editName = ref('')
@@ -208,6 +341,21 @@ const editName = ref('')
 const showAddressForm = ref(false)
 const editingAddress = ref<UserAddress | null>(null) // 正在编辑的地址
 const isEditMode = ref(false) // 是否为编辑模式
+
+// Top-up弹窗状态
+const showTopUpDialog = ref(false)
+const topUpForm = ref({
+  redeemCode: ''
+})
+const topUpFormRef = ref()
+
+// Top-up表单验证规则
+const topUpRules = {
+  redeemCode: [
+    { required: true, message: 'Please enter redeem code', trigger: 'blur' },
+    { min: 1, max: 20, message: 'Redeem code length should be 1-20 characters', trigger: 'blur' }
+  ]
+}
 
 // 文件上传引用
 const fileInputRef = ref<HTMLInputElement>()
@@ -399,6 +547,45 @@ const handleAvatarUpload = async (event: Event) => {
     
   } catch (error) {
     console.error('Failed to update avatar:', error)
+  }
+}
+
+/**
+ * 处理Top-up充值
+ */
+const handleTopUp = async () => {
+  if (!topUpFormRef.value) return
+  
+  try {
+    // 验证表单
+    const valid = await topUpFormRef.value.validate()
+    if (!valid) return
+    
+    // 充值
+    await performTopUp(topUpForm.value.redeemCode)
+    
+    // 充值成功后关闭弹窗并重置表单
+    showTopUpDialog.value = false
+    topUpForm.value.redeemCode = ''
+    topUpFormRef.value.resetFields()
+    
+    // 重新加载支付账户信息
+    await loadPayAccount()
+    
+  } catch (error) {
+    // 错误已经在performTopUp中处理了
+    console.error('Top-up failed:', error)
+  }
+}
+
+/**
+ * 取消Top-up充值
+ */
+const handleTopUpCancel = () => {
+  showTopUpDialog.value = false
+  topUpForm.value.redeemCode = ''
+  if (topUpFormRef.value) {
+    topUpFormRef.value.resetFields()
   }
 }
 
@@ -648,6 +835,148 @@ const handleLogout = () => {
 }
 
 
+
+/* Payment Account Section */
+.payment-account-section {
+  background: white;
+  border-radius: 12px;
+  padding: 32px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.payment-loading,
+.payment-error {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 24px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  color: #6b7280;
+}
+
+.payment-error {
+  color: #dc2626;
+}
+
+.error-content {
+  flex: 1;
+}
+
+.error-message {
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.error-hint {
+  font-size: 12px;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.loading-icon,
+.error-icon {
+  font-size: 16px;
+}
+
+.refresh-btn {
+  color: #6b7280 !important;
+  font-size: 14px !important;
+}
+
+.refresh-btn:hover {
+  color: #c75d35 !important;
+}
+
+.payment-account-card {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 24px;
+  border: 1px solid #e1e8ed;
+}
+
+.account-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.account-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.account-label {
+  font-size: 12px;
+  color: #6b7280;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.account-value {
+  font-size: 14px;
+  color: #1a1a1a;
+  font-weight: 600;
+}
+
+.balance-value {
+  font-size: 18px;
+  color: #c75d35;
+  font-weight: 700;
+}
+
+.account-actions {
+  display: flex;
+  gap: 12px;
+  padding-top: 20px;
+  border-top: 1px solid #e1e8ed;
+}
+
+.account-actions .el-button--primary {
+  background: #c75d35 !important;
+  border-color: #c75d35 !important;
+}
+
+.account-actions .el-button--primary:hover {
+  background: #a84a2a !important;
+  border-color: #a84a2a !important;
+}
+
+/* Transaction History按钮样式 */
+.account-actions .transaction-history-btn {
+  background: #ffffff !important;
+  border-color: #dcdfe6 !important;
+  color: #606266 !important;
+}
+
+.account-actions .transaction-history-btn:hover {
+  background: #f5f7fa !important;
+  border-color: #c0c4cc !important;
+  color: #606266 !important;
+}
+
+.no-payment-account {
+  text-align: center;
+  padding: 40px 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e1e8ed;
+}
+
+.no-account-icon {
+  font-size: 48px;
+  color: #9ca3af;
+  margin-bottom: 16px;
+}
+
+.no-account-text {
+  color: #6b7280;
+  font-size: 14px;
+  margin: 0 0 20px 0;
+}
 
 /* Addresses Section */
 .addresses-section {
@@ -1022,5 +1351,104 @@ const handleLogout = () => {
 .add-address-button:hover {
   background: #e55a2e;
   border-color: #e55a2e;
+}
+
+/* Top-up弹窗样式 */
+.top-up-info {
+  margin-top: 16px;
+  padding: 12px 16px;
+  border-radius: 6px;
+}
+
+.info-text {
+  margin: 0;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.info-text .el-icon {
+  font-size: 16px;
+  color: #c75d35;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+/* Top-up弹窗表单样式 */
+:deep(.el-dialog) {
+  border-radius: 8px;
+}
+
+:deep(.el-dialog__header) {
+  padding: 20px 24px 16px;
+}
+
+:deep(.el-dialog__body) {
+  padding: 0 24px 20px;
+}
+
+/* Top-up弹窗关闭按钮悬浮样式 */
+:deep(.el-dialog__headerbtn) {
+  color: #909399;
+}
+
+:deep(.el-dialog__headerbtn:hover) {
+  color: #c75d35 !important;
+}
+
+:deep(.el-dialog__headerbtn:hover .el-dialog__close) {
+  color: #c75d35 !important;
+}
+
+:deep(.el-dialog .el-icon:hover) {
+  color: #c75d35 !important;
+}
+
+/* 更具体的选择器覆盖Element Plus默认样式 */
+:deep(.el-dialog__header .el-dialog__headerbtn:hover) {
+  color: #c75d35 !important;
+}
+
+:deep(.el-dialog__header .el-dialog__headerbtn:hover svg) {
+  color: #c75d35 !important;
+}
+
+/* Top-up弹窗按钮样式 */
+.dialog-footer .el-button--primary {
+  background: #c75d35 !important;
+  border-color: #c75d35 !important;
+}
+
+.dialog-footer .el-button--primary:hover {
+  background: #a84a2a !important;
+  border-color: #a84a2a !important;
+}
+
+/* Cancel按钮样式 */
+.dialog-footer .el-button:not(.el-button--primary) {
+  background: #ffffff !important;
+  border-color: #dcdfe6 !important;
+  color: #606266 !important;
+}
+
+.dialog-footer .el-button:not(.el-button--primary):hover {
+  background: #f5f7fa !important;
+  border-color: #c0c4cc !important;
+  color: #606266 !important;
+}
+
+/* Top-up弹窗输入框样式 */
+:deep(.el-input__wrapper.is-focus) {
+  border-color: #c75d35 !important;
+  box-shadow: 0 0 0 2px #dc653a !important;
+}
+
+:deep(.el-dialog__footer) {
+  padding: 16px 24px 20px;
 }
 </style>
