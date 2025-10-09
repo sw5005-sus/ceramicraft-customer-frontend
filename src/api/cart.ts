@@ -1,6 +1,6 @@
 import apiClient from './api'
 import { PRODUCT_ENDPOINTS } from '../config/api-endpoints'
-import type { CartResponse, CartData, AddToCartRequest, AddToCartResponse } from '../types/api'
+import type { CartResponse, CartData, AddToCartRequest, AddToCartResponse, UpdateCartItemRequest, UpdateCartItemResponse, RemoveCartItemResponse, CartPriceEstimate, CartPriceEstimateResponse } from '../types/api'
 
 /**
  * 获取购物车内容
@@ -53,13 +53,11 @@ export const addToCart = async (productId: number, quantity: number = 1): Promis
 }
 
 /**
- * 更新购物车商品数量
+ * 更新购物车商品信息
  */
-export const updateCartItem = async (itemId: number, quantity: number): Promise<void> => {
+export const updateCartItem = async (itemId: number, updateData: UpdateCartItemRequest): Promise<void> => {
   try {
-    const response = await apiClient.put(`${PRODUCT_ENDPOINTS.CART}/${itemId}`, {
-      quantity
-    })
+    const response = await apiClient.put<UpdateCartItemResponse>(`${PRODUCT_ENDPOINTS.CART}/items/${itemId}`, updateData)
     
     if (response.data.code !== 200) {
       throw new Error(response.data.err_msg || 'Failed to update cart item')
@@ -75,7 +73,7 @@ export const updateCartItem = async (itemId: number, quantity: number): Promise<
  */
 export const removeFromCart = async (itemId: number): Promise<void> => {
   try {
-    const response = await apiClient.delete(`${PRODUCT_ENDPOINTS.CART}/${itemId}`)
+    const response = await apiClient.delete<RemoveCartItemResponse>(`${PRODUCT_ENDPOINTS.CART}/items/${itemId}`)
     
     if (response.data.code !== 200) {
       throw new Error(response.data.err_msg || 'Failed to remove item from cart')
@@ -89,11 +87,9 @@ export const removeFromCart = async (itemId: number): Promise<void> => {
 /**
  * 选择/取消选择购物车商品
  */
-export const toggleCartItemSelection = async (itemId: number, selected: boolean): Promise<void> => {
+export const toggleCartItemSelection = async (itemId: number, updateData: UpdateCartItemRequest): Promise<void> => {
   try {
-    const response = await apiClient.patch(`${PRODUCT_ENDPOINTS.CART}/${itemId}/select`, {
-      selected
-    })
+    const response = await apiClient.put<UpdateCartItemResponse>(`${PRODUCT_ENDPOINTS.CART}/items/${itemId}`, updateData)
     
     if (response.data.code !== 200) {
       throw new Error(response.data.err_msg || 'Failed to toggle item selection')
@@ -116,6 +112,24 @@ export const clearCart = async (): Promise<void> => {
     }
   } catch (error) {
     console.error('Clear cart failed:', error)
+    throw error
+  }
+}
+
+/**
+ * 获取购物车价格估算
+ */
+export const getCartPriceEstimate = async (): Promise<CartPriceEstimate> => {
+  try {
+    const response = await apiClient.get<CartPriceEstimateResponse>(PRODUCT_ENDPOINTS.CART_PRICE_ESTIMATE)
+    
+    if (response.data.code === 200) {
+      return response.data.data
+    } else {
+      throw new Error(response.data.err_msg || 'Failed to get cart price estimate')
+    }
+  } catch (error) {
+    console.error('Get cart price estimate failed:', error)
     throw error
   }
 }

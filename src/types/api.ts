@@ -111,18 +111,26 @@ export interface ImageUploadResponse {
   upload_url: string;
 }
 
+// 商品信息类型
+export interface ProductInfo {
+  id: number;
+  name: string;
+  category: string;
+  price: number;
+  desc: string;
+  stock: number;
+  pic_info: string;
+  status: number;
+}
+
 // 购物车商品项类型
 export interface CartItem {
   id: number;
-  product_id: number;
-  product_name: string;
-  product_price: number;
-  product_image: string;
+  product_info: ProductInfo;
   quantity: number;
+  total_price: number;
+  status: number;
   selected: boolean;
-  created_at: number;
-  updated_at: number;
-  user_id: number;
 }
 
 // 添加商品到购物车的请求类型
@@ -138,6 +146,50 @@ export interface AddToCartRequest {
 export interface AddToCartResponse {
   code: number;
   data: unknown; // 根据错误信息，实际返回的data可能是商品详情或其他格式
+  err_msg: string;
+}
+
+// 更新购物车项目的请求类型
+export interface UpdateCartItemRequest {
+  id: number;
+  product_id: number;
+  quantity: number;
+  selected: boolean;
+  user_id: number;
+}
+
+// 更新购物车项目的响应类型
+export interface UpdateCartItemResponse {
+  code: number;
+  data: {
+    id: number;
+    product_id: number;
+    quantity: number;
+    selected: boolean;
+    user_id: number;
+  };
+  err_msg: string;
+}
+
+// 删除购物车商品的响应类型
+export interface RemoveCartItemResponse {
+  code: number;
+  data: string;
+  err_msg: string;
+}
+
+// 购物车价格估算数据类型
+export interface CartPriceEstimate {
+  product_price: number;
+  shipping_price: number;
+  tax: number;
+  total: number;
+}
+
+// 购物车价格估算响应类型
+export interface CartPriceEstimateResponse {
+  code: number;
+  data: CartPriceEstimate;
   err_msg: string;
 }
 

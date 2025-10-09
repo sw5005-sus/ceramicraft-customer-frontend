@@ -1,13 +1,5 @@
 <template>
   <div class="product-detail-page">
-    <!-- 返回按钮 -->
-    <div class="breadcrumb">
-      <button class="back-btn" @click="goBack">
-        <span class="back-icon">←</span>
-        <span>Back</span>
-      </button>
-    </div>
-
     <!-- 加载状态 -->
     <div v-if="loading" class="loading-state">
       <p>Loading product details...</p>
@@ -170,11 +162,6 @@ const fetchProductDetail = async () => {
   }
 }
 
-// 返回上一页
-const goBack = () => {
-  router.back()
-}
-
 // 检查商品是否缺货
 const isOutOfStock = (product: Product) => {
   return product.stock <= 0 || product.status !== 1
@@ -279,33 +266,6 @@ onMounted(() => {
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
-}
-
-/* 面包屑导航 */
-.breadcrumb {
-  margin-bottom: 30px;
-}
-
-.back-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: none;
-  border: none;
-  color: #666;
-  cursor: pointer;
-  font-size: 14px;
-  padding: 8px 0;
-  transition: color 0.2s;
-}
-
-.back-btn:hover {
-  color: #c75d35;
-}
-
-.back-icon {
-  font-size: 16px;
-  font-weight: bold;
 }
 
 /* 加载和错误状态 */

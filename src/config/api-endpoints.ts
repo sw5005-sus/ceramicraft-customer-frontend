@@ -46,6 +46,7 @@ export const PRODUCT_ENDPOINTS = {
   // 购物车相关
   CART: `${SERVICE_PATHS.PRODUCT_MS}/cart`,
   CART_ITEMS: `${SERVICE_PATHS.PRODUCT_MS}/cart/items`,
+  CART_PRICE_ESTIMATE: `${SERVICE_PATHS.PRODUCT_MS}/cart/price-estimate`,
   
   // 后续可以添加其他商品相关端点
   // CATEGORIES: `${SERVICE_PATHS.PRODUCT_MS}/categories`,
