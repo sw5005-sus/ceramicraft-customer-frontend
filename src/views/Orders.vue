@@ -72,12 +72,12 @@
                 <h4 class="item-name">{{ item.product_info.name }}</h4>
                 <p class="item-category">{{ item.product_info.category }}</p>
                 <div class="item-price-qty">
-                  <span class="item-price">¥{{ formatPrice(item.product_info.price) }}</span>
+                  <span class="item-price">${{ formatPrice(item.product_info.price) }}</span>
                   <span class="item-qty">× {{ item.quantity }}</span>
                 </div>
               </div>
               <div class="item-total">
-                ¥{{ formatPrice(item.total_price) }}
+                ${{ formatPrice(item.total_price) }}
               </div>
             </div>
           </div>
@@ -86,7 +86,7 @@
           <div class="order-footer">
             <div class="order-total">
               <span class="total-label">Total: </span>
-              <span class="total-amount">¥{{ formatPrice(order.total_amount) }}</span>
+              <span class="total-amount">${{ formatPrice(order.total_amount) }}</span>
             </div>
             <div class="order-actions">
               <el-button size="small" @click="viewOrderDetail(order.id)">

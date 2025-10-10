@@ -19,6 +19,13 @@
         </div>
         <div 
           class="nav-tab" 
+          :class="{ active: currentRoute === 'Cart' }"
+          @click="goToRoute('Cart')"
+        >
+          Cart
+        </div>
+        <div 
+          class="nav-tab" 
           :class="{ active: currentRoute === 'Orders' }"
           @click="goToRoute('Orders')"
         >
@@ -33,9 +40,6 @@
           </el-icon>
           <span v-if="!isLoggedIn" class="login-status">Not Logged In</span>
         </div>
-        <div class="order-icon" @click="goOrders">
-          <el-icon class="action-icon"><List /></el-icon>
-        </div>
       </div>
     </div>
   </header>
@@ -48,7 +52,7 @@
  */
 
 import { ref, onMounted, onUnmounted, computed } from 'vue'
-import { User, List } from '@element-plus/icons-vue'
+import { User } from '@element-plus/icons-vue'
 import { useRouter, useRoute } from 'vue-router'
 
 const router = useRouter()
@@ -61,6 +65,8 @@ const isLoggedIn = ref(!!localStorage.getItem('userToken'))
 const currentRoute = computed(() => {
   if (route.name === 'CustomerHome' || route.name === 'Home') {
     return 'Home'
+  } else if (route.name === 'CustomerCart' || route.name === 'Cart') {
+    return 'Cart'
   } else if (route.name === 'CustomerOrders' || route.name === 'Orders') {
     return 'Orders'
   }
@@ -98,19 +104,16 @@ const goProfile = () => {
   }
 }
 
-// 跳转到订单页面
-const goOrders = () => {
-  if (isLoggedIn.value) {
-    router.push({ name: 'CustomerOrders' })
-  } else {
-    router.push({ name: 'CustomerLogin' })
-  }
-}
-
 // 导航标签跳转函数
 const goToRoute = (routeName: string) => {
   if (routeName === 'Home') {
     router.push({ name: 'CustomerHome' })
+  } else if (routeName === 'Cart') {
+    if (isLoggedIn.value) {
+      router.push({ name: 'CustomerCart' })
+    } else {
+      router.push({ name: 'CustomerLogin' })
+    }
   } else if (routeName === 'Orders') {
     if (isLoggedIn.value) {
       router.push({ name: 'CustomerOrders' })
@@ -239,9 +242,5 @@ const goToRoute = (routeName: string) => {
   align-items: center;
   justify-content: center;
   height: 24px; /* 固定高度 */
-}
-
-.order-icon {
-  cursor: pointer;
 }
 </style>

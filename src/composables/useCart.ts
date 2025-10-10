@@ -238,7 +238,7 @@ export const useCart = () => {
    * 格式化价格显示
    */
   const formatPrice = (price: number): string => {
-    return `¥${(price / 100).toFixed(2)}`
+    return `$${(price / 100).toFixed(2)}`
   }
 
   // 组件挂载时自动加载
