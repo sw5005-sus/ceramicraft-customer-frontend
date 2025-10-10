@@ -295,6 +295,7 @@ import { usePaymentAccount } from '../composables/usePaymentAccount'
 import { useUserProfile } from '../composables/useUserProfile'
 import { createOrder } from '../api/order'
 import type { OrderItem, CreateOrderRequest } from '../api/order'
+import { removeFromCart } from '../api/cart'
 import { S3_CONFIG } from '../config/api-endpoints'
 import defaultImg from '../assets/defaultimg.png'
 
@@ -534,6 +535,18 @@ const placeOrder = async () => {
     
     if (orderNumber) {
       ElMessage.success(`Order placed successfully! Order No: ${orderNumber}`)
+      
+      // 从购物车中删除已结账的商品
+      try {
+        const deletePromises = checkoutItems.value.map(item => 
+          removeFromCart(item.id)
+        )
+        await Promise.all(deletePromises)
+        console.log('Successfully removed checked out items from cart')
+      } catch (error) {
+        console.error('Failed to remove some items from cart:', error)
+        // 即使删除购物车项失败，也不影响订单成功的流程
+      }
       
       // 清除结账数据
       clearCheckoutData()
