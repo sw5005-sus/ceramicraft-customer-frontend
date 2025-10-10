@@ -38,14 +38,14 @@
       <div class="orders-list">
         <div
           v-for="order in orders"
-          :key="order.id"
+          :key="order.order_no"
           class="order-card"
         >
           <!-- 订单头部 -->
           <div class="order-header">
             <div class="order-info">
               <span class="order-number">Order #{{ order.order_no }}</span>
-              <span class="order-date">{{ formatDate(order.created_at) }}</span>
+              <span class="order-date">{{ formatDate(order.create_time) }}</span>
             </div>
             <div class="order-status">
               <span class="status-badge" :class="getStatusClass(order.status)">
@@ -54,31 +54,15 @@
             </div>
           </div>
 
-          <!-- 订单商品列表 -->
-          <div class="order-items">
-            <div
-              v-for="item in order.items"
-              :key="item.id"
-              class="order-item"
-            >
-              <div class="item-image">
-                <img 
-                  :src="getProductImageUrl(item.product_info.pic_info)" 
-                  :alt="item.product_info.name"
-                  @error="handleImageError"
-                />
-              </div>
-              <div class="item-details">
-                <h4 class="item-name">{{ item.product_info.name }}</h4>
-                <p class="item-category">{{ item.product_info.category }}</p>
-                <div class="item-price-qty">
-                  <span class="item-price">${{ formatPrice(item.product_info.price) }}</span>
-                  <span class="item-qty">× {{ item.quantity }}</span>
-                </div>
-              </div>
-              <div class="item-total">
-                ${{ formatPrice(item.total_price) }}
-              </div>
+          <!-- 订单信息 -->
+          <div class="order-details">
+            <div class="order-info-row">
+              <span class="info-label">Receiver:</span>
+              <span class="info-value">{{ order.receiver_first_name }} {{ order.receiver_last_name }}</span>
+            </div>
+            <div class="order-info-row">
+              <span class="info-label">Phone:</span>
+              <span class="info-value">{{ order.receiver_phone }}</span>
             </div>
           </div>
 
@@ -86,17 +70,17 @@
           <div class="order-footer">
             <div class="order-total">
               <span class="total-label">Total: </span>
-              <span class="total-amount">${{ formatPrice(order.total_amount) }}</span>
+              <span class="total-amount">{{ formatCurrency(order.total_amount) }}</span>
             </div>
             <div class="order-actions">
-              <el-button size="small" @click="viewOrderDetail(order.id)">
+              <el-button size="small" @click="viewOrderDetail(order.order_no)">
                 View Details
               </el-button>
               <el-button 
-                v-if="order.status === 'pending'"
+                v-if="order.status === 'pending' || order.status === '待支付'"
                 type="danger" 
                 size="small" 
-                @click="cancelOrder(order.id)"
+                @click="cancelOrder(order.order_no)"
               >
                 Cancel
               </el-button>
@@ -110,31 +94,12 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Loading, Warning, Document } from '@element-plus/icons-vue'
+import { getOrderList, type Order, type OrderListRequest } from '../api/order'
 
-// 订单接口类型定义
-interface OrderItem {
-  id: number
-  product_info: {
-    id: number
-    name: string
-    category: string
-    price: number
-    pic_info: string
-  }
-  quantity: number
-  total_price: number
-}
-
-interface Order {
-  id: number
-  order_no: string
-  status: string
-  total_amount: number
-  created_at: string
-  items: OrderItem[]
-}
+const router = useRouter()
 
 // 响应式数据
 const orders = ref<Order[]>([])
@@ -149,56 +114,13 @@ const loadOrders = async () => {
   error.value = null
 
   try {
-    // TODO: 调用订单API
-    // const response = await getOrders()
-    // orders.value = response.data
+    const params: OrderListRequest = {
+      limit: 20,
+      offset: 0
+    }
     
-    // 临时模拟数据
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    orders.value = [
-      {
-        id: 1,
-        order_no: 'ORD202410080001',
-        status: 'completed',
-        total_amount: 35425,
-        created_at: '2024-10-08T10:30:00Z',
-        items: [
-          {
-            id: 1,
-            product_info: {
-              id: 1,
-              name: 'Elegant Ceramic Vase',
-              category: 'Vases',
-              price: 32500,
-              pic_info: 'headImage.png'
-            },
-            quantity: 1,
-            total_price: 32500
-          }
-        ]
-      },
-      {
-        id: 2,
-        order_no: 'ORD202410070001',
-        status: 'pending',
-        total_amount: 15800,
-        created_at: '2024-10-07T15:20:00Z',
-        items: [
-          {
-            id: 2,
-            product_info: {
-              id: 2,
-              name: 'Modern Tea Set',
-              category: 'Tea Sets',
-              price: 15800,
-              pic_info: 'headImage.png'
-            },
-            quantity: 1,
-            total_price: 15800
-          }
-        ]
-      }
-    ]
+    const response = await getOrderList(params)
+    orders.value = response.orders
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Failed to load orders'
     console.error('Failed to load orders:', err)
@@ -207,27 +129,14 @@ const loadOrders = async () => {
   }
 }
 
-/**
- * 获取商品图片URL
- */
-const getProductImageUrl = (picInfo: string) => {
-  if (!picInfo) return '/src/assets/defaultimg.png'
-  return `/public/img/${picInfo}`
-}
+
 
 /**
- * 处理图片加载错误
+ * 格式化价格（包含美元符号，负号在前）
  */
-const handleImageError = (event: Event) => {
-  const img = event.target as HTMLImageElement
-  img.src = '/src/assets/defaultimg.png'
-}
-
-/**
- * 格式化价格
- */
-const formatPrice = (price: number) => {
-  return (price / 100).toFixed(2)
+const formatCurrency = (price: number) => {
+  const amount = (price / 100).toFixed(2)
+  return amount.startsWith('-') ? `-$${amount.substring(1)}` : `$${amount}`
 }
 
 /**
@@ -249,6 +158,7 @@ const formatDate = (dateString: string) => {
  */
 const getStatusClass = (status: string) => {
   switch (status) {
+    // 英文状态
     case 'pending':
       return 'status-pending'
     case 'processing':
@@ -258,6 +168,18 @@ const getStatusClass = (status: string) => {
     case 'completed':
       return 'status-completed'
     case 'cancelled':
+      return 'status-cancelled'
+    // 中文状态
+    case '待支付':
+      return 'status-pending'
+    case '已支付':
+    case '处理中':
+      return 'status-processing'
+    case '已发货':
+      return 'status-shipped'
+    case '已完成':
+      return 'status-completed'
+    case '已取消':
       return 'status-cancelled'
     default:
       return 'status-unknown'
@@ -269,6 +191,7 @@ const getStatusClass = (status: string) => {
  */
 const getStatusText = (status: string) => {
   switch (status) {
+    // 英文状态
     case 'pending':
       return 'Pending'
     case 'processing':
@@ -279,27 +202,33 @@ const getStatusText = (status: string) => {
       return 'Completed'
     case 'cancelled':
       return 'Cancelled'
+    // 中文状态直接返回
+    case '待支付':
+    case '已支付':
+    case '处理中':
+    case '已发货':
+    case '已完成':
+    case '已取消':
+      return status
     default:
-      return 'Unknown'
+      return status || 'Unknown'
   }
 }
 
 /**
  * 查看订单详情
  */
-const viewOrderDetail = (orderId: number) => {
-  // TODO: 跳转到订单详情页面
-  console.log('View order detail:', orderId)
-  ElMessage.info('Order detail page coming soon!')
+const viewOrderDetail = (orderNo: string) => {
+  router.push(`/customer/orders/${orderNo}`)
 }
 
 /**
  * 取消订单
  */
-const cancelOrder = async (orderId: number) => {
+const cancelOrder = async (orderNo: string) => {
   try {
     // TODO: 调用取消订单API
-    console.log('Cancel order:', orderId)
+    console.log('Cancel order:', orderNo)
     ElMessage.success('Order cancelled successfully')
     // 重新加载订单列表
     await loadOrders()
@@ -317,7 +246,7 @@ onMounted(() => {
 
 <style scoped>
 .orders-page {
-  max-width: 1200px;
+  max-width: 900px;
   margin: 0 auto;
   padding: 24px;
   min-height: calc(100vh - 100px);
@@ -399,15 +328,16 @@ onMounted(() => {
 .orders-list {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 16px;
 }
 
 .order-card {
   background: white;
   border: 1px solid #e1e8ed;
   border-radius: 12px;
-  padding: 24px;
+  padding: 20px;
   transition: box-shadow 0.2s;
+  max-width: 100%;
 }
 
 .order-card:hover {
@@ -418,10 +348,11 @@ onMounted(() => {
 .order-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-  padding-bottom: 16px;
+  align-items: flex-start;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
   border-bottom: 1px solid #f1f5f9;
+  gap: 16px;
 }
 
 .order-info {
@@ -480,77 +411,38 @@ onMounted(() => {
   color: #6b7280;
 }
 
-/* 订单商品列表 */
-.order-items {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  margin-bottom: 20px;
-}
-
-.order-item {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 16px;
+/* 订单详情 */
+.order-details {
+  margin-bottom: 16px;
+  padding: 12px 16px;
   background: #f8f9fa;
   border-radius: 8px;
 }
 
-.item-image {
-  width: 60px;
-  height: 60px;
-  border-radius: 6px;
-  overflow: hidden;
-  border: 1px solid #e1e8ed;
+.order-info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.order-info-row:last-child {
+  margin-bottom: 0;
+}
+
+.info-label {
+  font-size: 13px;
+  color: #6b7280;
+  font-weight: 500;
   flex-shrink: 0;
 }
 
-.item-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.item-details {
-  flex: 1;
-  min-width: 0;
-}
-
-.item-name {
-  font-size: 16px;
-  font-weight: 600;
-  color: #1a1a1a;
-  margin: 0 0 4px 0;
-}
-
-.item-category {
-  font-size: 14px;
-  color: #6b7280;
-  margin: 0 0 8px 0;
-}
-
-.item-price-qty {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-}
-
-.item-price {
-  color: #c75d35;
-  font-weight: 500;
-}
-
-.item-qty {
-  color: #6b7280;
-}
-
-.item-total {
-  font-size: 16px;
-  font-weight: 600;
+.info-value {
+  font-size: 13px;
   color: #1a1a1a;
   text-align: right;
+  flex: 1;
+  margin-left: 12px;
 }
 
 /* 订单底部 */
@@ -558,8 +450,9 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-top: 16px;
+  padding-top: 12px;
   border-top: 1px solid #f1f5f9;
+  gap: 16px;
 }
 
 .order-total {
@@ -577,11 +470,14 @@ onMounted(() => {
 
 .order-actions {
   display: flex;
-  gap: 12px;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .order-actions .el-button {
-  min-width: 80px;
+  min-width: 70px;
+  font-size: 13px;
+  padding: 6px 12px;
 }
 
 .order-actions .el-button:not(.el-button--danger) {
@@ -605,7 +501,38 @@ onMounted(() => {
   border-color: #b91c1c;
 }
 
-/* 响应式设计 */
+/* 中等屏幕响应式设计 */
+@media (max-width: 1024px) {
+  .orders-page {
+    max-width: 800px;
+    padding: 20px;
+  }
+}
+
+@media (max-width: 900px) {
+  .orders-page {
+    max-width: 100%;
+    padding: 16px;
+  }
+  
+  .order-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .order-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  
+  .order-actions {
+    justify-content: flex-end;
+  }
+}
+
+/* 小屏幕响应式设计 */
 @media (max-width: 768px) {
   .orders-page {
     padding: 16px;
@@ -621,18 +548,18 @@ onMounted(() => {
     gap: 12px;
   }
 
-  .order-item {
+  .order-details {
+    padding: 12px;
+  }
+
+  .order-info-row {
     flex-direction: column;
     align-items: flex-start;
-    text-align: left;
+    gap: 4px;
   }
 
-  .item-image {
-    align-self: center;
-  }
-
-  .item-total {
-    align-self: flex-end;
+  .info-label {
+    min-width: auto;
   }
 
   .order-footer {
