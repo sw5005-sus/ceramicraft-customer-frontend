@@ -60,7 +60,7 @@ export const usePaymentAccount = () => {
    * 格式化余额显示
    */
   const formatBalance = (balance: number): string => {
-    return `¥${balance.toFixed(2)}`
+    return `$${balance.toFixed(2)}`
   }
 
   /**
@@ -93,7 +93,7 @@ export const usePaymentAccount = () => {
         payAccount.value.balance = result.current_balance
       }
       
-      ElMessage.success(`Successfully topped up ¥${result.top_up_amount.toFixed(2)}!`)
+      ElMessage.success(`Successfully topped up $${result.top_up_amount.toFixed(2)}!`)
       console.log('Top-up successful:', result)
       
       return result

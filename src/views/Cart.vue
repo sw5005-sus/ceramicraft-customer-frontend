@@ -298,8 +298,11 @@ import { ElMessage } from 'element-plus'
 import { Loading, Warning, ShoppingCart, Delete, CreditCard, InfoFilled } from '@element-plus/icons-vue'
 import { useCart } from '../composables/useCart'
 import { usePaymentAccount } from '../composables/usePaymentAccount'
-// import { useRouter } from 'vue-router'
-// const router = useRouter()
+import { useCheckout } from '../composables/useCheckout'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+const { setCheckoutData } = useCheckout()
 
 // 使用购物车 composable
 const {
@@ -386,8 +389,14 @@ const handleCheckout = () => {
     return
   }
   
-  // TODO: 跳转到结账页面
-  ElMessage.info('Checkout feature coming soon!')
+  // 获取选中的商品
+  const selectedItems = cartItems.value.filter(item => item.selected)
+  
+  // 传递结账数据
+  setCheckoutData(selectedItems, priceEstimate.value)
+  
+  // 跳转到结账页面
+  router.push({ name: 'CustomerCheckout' })
 }
 
 /**

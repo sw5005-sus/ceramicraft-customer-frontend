@@ -88,7 +88,7 @@
         <div class="product-info">
           <div class="product-artist">{{ item.category }}</div>
           <div class="product-title">{{ item.name }}</div>
-          <div class="product-price">¥{{ formatPrice(item.price) }}</div>
+          <div class="product-price">${{ formatPrice(item.price) }}</div>
           <div class="product-stock">Stock: {{ item.stock }}</div>
         </div>
       </div>

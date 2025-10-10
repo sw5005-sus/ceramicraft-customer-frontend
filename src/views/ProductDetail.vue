@@ -39,7 +39,7 @@
           <h1 class="product-title">{{ product.name }}</h1>
           
           <div class="product-price">
-            <span class="price">¥{{ formatPrice(product.price) }}</span>
+            <span class="price">${{ formatPrice(product.price) }}</span>
           </div>
 
           <!-- 数量选择 -->

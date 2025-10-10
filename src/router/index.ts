@@ -59,6 +59,12 @@ const routes: Array<RouteRecordRaw> = [
             meta: { requiresAuth: true }
           },
           {
+            path: 'checkout',
+            name: 'CustomerCheckout',
+            component: () => import('../views/Checkout.vue'),
+            meta: { requiresAuth: true }
+          },
+          {
             path: 'orders',
             name: 'CustomerOrders',
             component: () => import('../views/Orders.vue'),
@@ -77,6 +83,10 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/cart',
     redirect: `${CUSTOMER_PREFIX}/cart`
+  },
+  {
+    path: '/checkout',
+    redirect: `${CUSTOMER_PREFIX}/checkout`
   },
   {
     path: '/profile',
