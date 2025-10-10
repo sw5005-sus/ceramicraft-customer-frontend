@@ -117,6 +117,19 @@ export interface OrderDetailResponse {
   error: string
 }
 
+// 确认收货请求接口
+export interface ConfirmDeliveryRequest {
+  order_no: string
+}
+
+// 确认收货响应接口
+export interface ConfirmDeliveryResponse {
+  status: number
+  msg: string
+  error: string
+  data: {}
+}
+
 /**
  * 创建订单
  */
@@ -179,6 +192,30 @@ export const getOrderDetail = async (orderNo: string): Promise<OrderDetail> => {
     }
   } catch (error) {
     console.error('Get order detail API error:', error)
+    throw error
+  }
+}
+
+/**
+ * 确认收货
+ */
+export const confirmDelivery = async (orderNo: string): Promise<void> => {
+  try {
+    console.log('Confirming delivery for order:', orderNo)
+    
+    const requestData: ConfirmDeliveryRequest = {
+      order_no: orderNo
+    }
+    
+    const response = await request.post<ConfirmDeliveryResponse>('/order-ms/v1/customer/confirm', requestData)
+    
+    console.log('Delivery confirmed successfully:', response)
+    
+    if (response.status !== 0) {
+      throw new Error(response.msg || response.error || 'Failed to confirm delivery')
+    }
+  } catch (error) {
+    console.error('Confirm delivery API error:', error)
     throw error
   }
 }

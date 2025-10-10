@@ -77,12 +77,20 @@
                 View Details
               </el-button>
               <el-button 
-                v-if="order.status === 'pending' || order.status === '待支付'"
+                v-if="order.status === 'Paid'"
                 type="danger" 
                 size="small" 
                 @click="cancelOrder(order.order_no)"
               >
                 Cancel
+              </el-button>
+              <el-button 
+                v-if="order.status === 'Shipped'"
+                type="primary" 
+                size="small" 
+                @click="confirmDeliveryOrder(order.order_no)"
+              >
+                Confirm Receipt
               </el-button>
             </div>
           </div>
@@ -97,7 +105,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Loading, Warning, Document } from '@element-plus/icons-vue'
-import { getOrderList, type Order, type OrderListRequest } from '../api/order'
+import { getOrderList, confirmDelivery, type Order, type OrderListRequest } from '../api/order'
 
 const router = useRouter()
 
@@ -158,29 +166,12 @@ const formatDate = (dateString: string) => {
  */
 const getStatusClass = (status: string) => {
   switch (status) {
-    // 英文状态
-    case 'pending':
-      return 'status-pending'
-    case 'processing':
-      return 'status-processing'
-    case 'shipped':
+    case 'Paid':
+      return 'status-paid'
+    case 'Shipped':
       return 'status-shipped'
-    case 'completed':
-      return 'status-completed'
-    case 'cancelled':
-      return 'status-cancelled'
-    // 中文状态
-    case '待支付':
-      return 'status-pending'
-    case '已支付':
-    case '处理中':
-      return 'status-processing'
-    case '已发货':
-      return 'status-shipped'
-    case '已完成':
-      return 'status-completed'
-    case '已取消':
-      return 'status-cancelled'
+    case 'Delivered':
+      return 'status-delivered'
     default:
       return 'status-unknown'
   }
@@ -191,25 +182,12 @@ const getStatusClass = (status: string) => {
  */
 const getStatusText = (status: string) => {
   switch (status) {
-    // 英文状态
-    case 'pending':
-      return 'Pending'
-    case 'processing':
-      return 'Processing'
-    case 'shipped':
+    case 'Paid':
+      return 'Paid'
+    case 'Shipped':
       return 'Shipped'
-    case 'completed':
-      return 'Completed'
-    case 'cancelled':
-      return 'Cancelled'
-    // 中文状态直接返回
-    case '待支付':
-    case '已支付':
-    case '处理中':
-    case '已发货':
-    case '已完成':
-    case '已取消':
-      return status
+    case 'Delivered':
+      return 'Delivered'
     default:
       return status || 'Unknown'
   }
@@ -235,6 +213,21 @@ const cancelOrder = async (orderNo: string) => {
   } catch (error) {
     console.error('Failed to cancel order:', error)
     ElMessage.error('Failed to cancel order')
+  }
+}
+
+/**
+ * 确认收货
+ */
+const confirmDeliveryOrder = async (orderNo: string) => {
+  try {
+    await confirmDelivery(orderNo)
+    ElMessage.success('Delivery confirmed successfully')
+    // 重新加载订单列表
+    await loadOrders()
+  } catch (error) {
+    console.error('Failed to confirm delivery:', error)
+    ElMessage.error('Failed to confirm delivery')
   }
 }
 
@@ -381,12 +374,7 @@ onMounted(() => {
   text-transform: uppercase;
 }
 
-.status-pending {
-  background: #fef3e2;
-  color: #d97706;
-}
-
-.status-processing {
+.status-paid {
   background: #dbeafe;
   color: #2563eb;
 }
@@ -396,14 +384,9 @@ onMounted(() => {
   color: #0369a1;
 }
 
-.status-completed {
+.status-delivered {
   background: #dcfce7;
   color: #16a34a;
-}
-
-.status-cancelled {
-  background: #fef2f2;
-  color: #dc2626;
 }
 
 .status-unknown {
@@ -480,15 +463,25 @@ onMounted(() => {
   padding: 6px 12px;
 }
 
-.order-actions .el-button:not(.el-button--danger) {
+.order-actions .el-button:not(.el-button--danger):not(.el-button--primary) {
   background: #ffffff;
   border-color: #c75d35;
   color: #c75d35;
 }
 
-.order-actions .el-button:not(.el-button--danger):hover {
+.order-actions .el-button:not(.el-button--danger):not(.el-button--primary):hover {
   background: #c75d35;
   color: white;
+}
+
+.order-actions .el-button--primary {
+  background: #c75d35;
+  border-color: #c75d35;
+}
+
+.order-actions .el-button--primary:hover {
+  background: #a84a2a;
+  border-color: #a84a2a;
 }
 
 .order-actions .el-button--danger {
