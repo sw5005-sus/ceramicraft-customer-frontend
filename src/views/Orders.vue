@@ -77,14 +77,6 @@
                 View Details
               </el-button>
               <el-button 
-                v-if="order.status === 'Paid'"
-                type="danger" 
-                size="small" 
-                @click="cancelOrder(order.order_no)"
-              >
-                Cancel
-              </el-button>
-              <el-button 
                 v-if="order.status === 'Shipped'"
                 type="primary" 
                 size="small" 
@@ -198,22 +190,6 @@ const getStatusText = (status: string) => {
  */
 const viewOrderDetail = (orderNo: string) => {
   router.push(`/customer/orders/${orderNo}`)
-}
-
-/**
- * 取消订单
- */
-const cancelOrder = async (orderNo: string) => {
-  try {
-    // TODO: 调用取消订单API
-    console.log('Cancel order:', orderNo)
-    ElMessage.success('Order cancelled successfully')
-    // 重新加载订单列表
-    await loadOrders()
-  } catch (error) {
-    console.error('Failed to cancel order:', error)
-    ElMessage.error('Failed to cancel order')
-  }
 }
 
 /**
@@ -463,13 +439,13 @@ onMounted(() => {
   padding: 6px 12px;
 }
 
-.order-actions .el-button:not(.el-button--danger):not(.el-button--primary) {
+.order-actions .el-button:not(.el-button--primary) {
   background: #ffffff;
   border-color: #c75d35;
   color: #c75d35;
 }
 
-.order-actions .el-button:not(.el-button--danger):not(.el-button--primary):hover {
+.order-actions .el-button:not(.el-button--primary):hover {
   background: #c75d35;
   color: white;
 }
@@ -482,16 +458,6 @@ onMounted(() => {
 .order-actions .el-button--primary:hover {
   background: #a84a2a;
   border-color: #a84a2a;
-}
-
-.order-actions .el-button--danger {
-  background: #dc2626;
-  border-color: #dc2626;
-}
-
-.order-actions .el-button--danger:hover {
-  background: #b91c1c;
-  border-color: #b91c1c;
 }
 
 /* 中等屏幕响应式设计 */
