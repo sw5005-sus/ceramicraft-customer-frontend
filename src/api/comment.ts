@@ -1,10 +1,24 @@
+import axios from 'axios'
+/**
+ * 获取当前用户发布的评论
+ */
+export async function getUserComments() {
+  const token = localStorage.getItem('userToken')
+  const res = await axios.get('/api/comment-ms/v1/customer/list/user', {
+    headers: {
+      'accept': 'application/json',
+      'authtoken': token || ''
+    }
+  })
+  return res.data
+}
 /**
  * 点赞评论
  */
 export const likeComment = async (review_id: string): Promise<boolean> => {
   const token = localStorage.getItem('userToken') || '';
   try {
-    const response = await request.post(
+    const response = await request.post<{ status: number }>(
       '/comment-ms/v1/customer/like',
       { review_id },
       {
