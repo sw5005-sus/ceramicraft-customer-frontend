@@ -21,7 +21,7 @@
             <div class="comment-content minimal">
               <span>{{ comment.content }}</span>
               <div v-if="comment.pic_info && comment.pic_info.length > 0 && comment.pic_info[0]" class="comment-images minimal">
-                <img v-for="(pic, index) in comment.pic_info.filter(p => p && p.trim())" :key="index" :src="getImageUrl(pic)" :alt="`评论图片${index + 1}`" class="comment-image" />
+                <img v-for="(pic, index) in comment.pic_info.filter((p: string) => p && p.trim())" :key="index" :src="getImageUrl(pic)" :alt="`评论图片${index + 1}`" class="comment-image" />
               </div>
             </div>
             <div class="comment-likes minimal">

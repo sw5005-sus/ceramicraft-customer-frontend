@@ -94,7 +94,7 @@ export interface CreateCommentResponse {
 /**
  * 根据商品ID获取评论列表
  */
-export const getProductComments = async (productId: number): Promise<{ comments: Comment[], total: number }> => {
+export const getProductComments = async (productId: number): Promise<{ comments: Comment[], total: number, pinnedReview: Comment | null }> => {
   try {
     console.log('Getting product comments for product ID:', productId)
     
@@ -106,7 +106,8 @@ export const getProductComments = async (productId: number): Promise<{ comments:
       // 将 review_list 转换为 comments，并计算总数
       const comments = response.data.review_list || []
       const total = comments.length
-      return { comments, total }
+      const pinnedReview = response.data.pinned_review || null
+      return { comments, total, pinnedReview }
     } else {
       throw new Error(response.msg || response.error || 'Failed to get product comments')
     }

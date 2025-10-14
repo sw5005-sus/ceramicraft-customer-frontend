@@ -136,49 +136,146 @@
         <!-- 评论列表 -->
         <div v-if="!commentsLoading && !commentsError" class="comments-content">
 
+          <!-- 置顶评论 -->
+          <div v-if="pinnedReview" class="pinned-review">
+            <div class="pinned-label">Pinned Review</div>
+            <div class="comment-item minimal pinned">
+              <div class="comment-header minimal">
+                <div class="author-rating-row">
+                  <span class="comment-author">{{ getCommentAuthor(pinnedReview) }}</span>
+                  <el-rate
+                    v-model="pinnedReview.stars"
+                    :max="5"
+                    disabled
+                    size="small"
+                    :colors="['#c75d35','#c75d35','#c75d35']"
+                    class="comment-stars"
+                  />
+                </div>
+                <span class="comment-date">{{ formatDate(pinnedReview.created_at) }}</span>
+              </div>
+              <div class="comment-content minimal">
+                <span>{{ pinnedReview.content }}</span>
+                <div v-if="pinnedReview.pic_info && pinnedReview.pic_info.length > 0 && pinnedReview.pic_info[0]" class="comment-images minimal">
+                  <img 
+                    v-for="(pic, index) in pinnedReview.pic_info.filter(p => p && p.trim())" 
+                    :key="index"
+                    :src="`${S3_CONFIG.BASE_URL}${pic}`" 
+                    :alt="`评论图片${index + 1}`"
+                    class="comment-image"
+                  />
+                </div>
+              </div>
+              <div class="comment-likes minimal" @click="handleLike(pinnedReview)">
+                <svg
+                  class="comment-likes-icon"
+                  viewBox="0 0 24 24"
+                  width="18"
+                  height="18"
+                  :fill="pinnedReview.current_user_liked ? '#c75d35' : 'none'"
+                  :stroke="pinnedReview.current_user_liked ? 'none' : '#c75d35'"
+                  :stroke-width="pinnedReview.current_user_liked ? 0 : 2"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41 1.01 4.5 2.09C13.09 4.01 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                </svg>
+                <span class="comment-likes-count">{{ pinnedReview.likes }}</span>
+              </div>
+            </div>
+          </div>
+
           <!-- 评论列表 -->
             <div v-if="comments && comments.length > 0" class="comments-list">
-              <div v-for="comment in comments" :key="comment.id" class="comment-item minimal">
-                <div class="comment-header minimal">
-                  <div class="author-rating-row">
-                    <span class="comment-author">{{ comment.is_anonymous ? 'Anonymous' : `User ${comment.user_id}` }}</span>
-                    <el-rate
-                      v-model="comment.stars"
-                      :max="5"
-                      disabled
-                      size="small"
-                      :colors="['#c75d35','#c75d35','#c75d35']"
-                      class="comment-stars"
-                    />
+              <div v-for="comment in comments.filter(c => !c.parent_id || c.parent_id === '')" :key="comment.id" class="comment-thread">
+                <!-- 顶级评论 -->
+                <div class="comment-item minimal">
+                  <div class="comment-header minimal">
+                    <div class="author-rating-row">
+                      <span class="comment-author">{{ getCommentAuthor(comment) }}</span>
+                      <el-rate
+                        v-model="comment.stars"
+                        :max="5"
+                        disabled
+                        size="small"
+                        :colors="['#c75d35','#c75d35','#c75d35']"
+                        class="comment-stars"
+                      />
+                    </div>
+                    <span class="comment-date">{{ formatDate(comment.created_at) }}</span>
                   </div>
-                  <span class="comment-date">{{ formatDate(comment.created_at) }}</span>
-                </div>
-                <div class="comment-content minimal">
-                  <span>{{ comment.content }}</span>
-                  <div v-if="comment.pic_info && comment.pic_info.length > 0 && comment.pic_info[0]" class="comment-images minimal">
-                    <img 
-                      v-for="(pic, index) in comment.pic_info.filter(p => p && p.trim())" 
-                      :key="index"
-                      :src="`${S3_CONFIG.BASE_URL}${pic}`" 
-                      :alt="`评论图片${index + 1}`"
-                      class="comment-image"
-                    />
+                  <div class="comment-content minimal">
+                    <span>{{ comment.content }}</span>
+                    <div v-if="comment.pic_info && comment.pic_info.length > 0 && comment.pic_info[0]" class="comment-images minimal">
+                      <img 
+                        v-for="(pic, index) in comment.pic_info.filter(p => p && p.trim())" 
+                        :key="index"
+                        :src="`${S3_CONFIG.BASE_URL}${pic}`" 
+                        :alt="`评论图片${index + 1}`"
+                        class="comment-image"
+                      />
+                    </div>
+                  </div>
+                  <div class="comment-likes minimal" @click="handleLike(comment)">
+                    <svg
+                      class="comment-likes-icon"
+                      viewBox="0 0 24 24"
+                      width="18"
+                      height="18"
+                      :fill="comment.current_user_liked ? '#c75d35' : 'none'"
+                      :stroke="comment.current_user_liked ? 'none' : '#c75d35'"
+                      :stroke-width="comment.current_user_liked ? 0 : 2"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41 1.01 4.5 2.09C13.09 4.01 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                    </svg>
+                    <span class="comment-likes-count">{{ comment.likes }}</span>
                   </div>
                 </div>
-                <div class="comment-likes minimal" @click="handleLike(comment)">
-                  <svg
-                    class="comment-likes-icon"
-                    viewBox="0 0 24 24"
-                    width="18"
-                    height="18"
-                    :fill="comment.current_user_liked ? '#c75d35' : 'none'"
-                    :stroke="comment.current_user_liked ? 'none' : '#c75d35'"
-                    :stroke-width="comment.current_user_liked ? 0 : 2"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41 1.01 4.5 2.09C13.09 4.01 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-                  </svg>
-                  <span class="comment-likes-count">{{ comment.likes }}</span>
+                <!-- 回复评论 -->
+                <div v-for="reply in comments.filter(c => c.parent_id === comment.id)" :key="reply.id" class="comment-reply">
+                  <div class="comment-item minimal reply">
+                    <div class="comment-header minimal">
+                      <div class="author-rating-row">
+                        <span class="comment-author">{{ getCommentAuthor(reply) }}</span>
+                        <el-rate
+                          v-model="reply.stars"
+                          :max="5"
+                          disabled
+                          size="small"
+                          :colors="['#c75d35','#c75d35','#c75d35']"
+                          class="comment-stars"
+                        />
+                      </div>
+                      <span class="comment-date">{{ formatDate(reply.created_at) }}</span>
+                    </div>
+                    <div class="comment-content minimal">
+                      <span>{{ reply.content }}</span>
+                      <div v-if="reply.pic_info && reply.pic_info.length > 0 && reply.pic_info[0]" class="comment-images minimal">
+                        <img 
+                          v-for="(pic, index) in reply.pic_info.filter(p => p && p.trim())" 
+                          :key="index"
+                          :src="`${S3_CONFIG.BASE_URL}${pic}`" 
+                          :alt="`评论图片${index + 1}`"
+                          class="comment-image"
+                        />
+                      </div>
+                    </div>
+                    <div class="comment-likes minimal" @click="handleLike(reply)">
+                      <svg
+                        class="comment-likes-icon"
+                        viewBox="0 0 24 24"
+                        width="18"
+                        height="18"
+                        :fill="reply.current_user_liked ? '#c75d35' : 'none'"
+                        :stroke="reply.current_user_liked ? 'none' : '#c75d35'"
+                        :stroke-width="reply.current_user_liked ? 0 : 2"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41 1.01 4.5 2.09C13.09 4.01 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                      </svg>
+                      <span class="comment-likes-count">{{ reply.likes }}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -227,6 +324,7 @@ const addingToCart = ref(false)
 const comments = ref<Comment[]>([])
 const commentsLoading = ref(false)
 const commentsError = ref<string | null>(null)
+const pinnedReview = ref<Comment | null>(null)
 
 
 // 获取商品详情
@@ -275,6 +373,7 @@ const fetchProductComments = async () => {
   try {
     const result = await getProductComments(parseInt(productId))
     comments.value = result.comments
+    pinnedReview.value = result.pinnedReview
     console.log('Product comments fetched successfully:', result)
   } catch (err) {
     commentsError.value = err instanceof Error ? err.message : 'Failed to fetch product comments'
@@ -408,6 +507,14 @@ const handleLike = async (comment: Comment) => {
   } else {
     ElMessage.error('点赞失败，请稍后重试');
   }
+}
+
+// 获取评论作者名字
+const getCommentAuthor = (comment: Comment) => {
+  if (comment.user_id === 1 && comment.parent_id && comment.parent_id !== '') {
+    return 'CeramiCraft Store';
+  }
+  return comment.is_anonymous ? 'Anonymous' : `User ${comment.user_id}`;
 }
 
 // 组件挂载时获取商品详情和评论
@@ -989,18 +1096,61 @@ onMounted(async () => {
 
 
 
-/* 无评论状态 */
-.no-comments {
-  text-align: center;
-  padding: 60px 20px;
-  background: #f9f9f9;
-  border-radius: 8px;
+/* 置顶评论 */
+.pinned-review {
+  margin-bottom: 30px;
+  padding: 20px;
+  background: #fff8f0;
+  border: 2px solid #c75d35;
+  border-radius: 12px;
 }
 
-.no-comments p {
-  font-size: 1.1rem;
-  color: #666;
+.pinned-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #c75d35;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+}
+
+.comment-item.pinned {
+  border: none;
+  background: transparent;
+  padding: 0;
   margin: 0;
+}
+
+.comment-item.pinned:hover {
+  box-shadow: none;
+}
+
+/* 评论线程 */
+.comment-thread {
+  margin-bottom: 32px;
+}
+
+/* 回复评论 */
+.comment-reply {
+  margin-left: 40px;
+  margin-top: 16px;
+  position: relative;
+}
+
+.comment-reply::before {
+  content: '';
+  position: absolute;
+  left: -20px;
+  top: 20px;
+  width: 20px;
+  height: 1px;
+  background: #ddd;
+}
+
+.comment-item.reply {
+  border-left: 2px solid #ddd;
+  padding-left: 16px;
+  background: #fafafa;
 }
 
 /* 响应式设计 */
