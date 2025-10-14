@@ -43,9 +43,10 @@
 import { ref, onMounted } from 'vue'
 
 import { getUserComments } from '../api/comment'
+import type { Comment } from '../api/comment'
 import { S3_CONFIG } from '../config/api-endpoints'
 
-const reviews = ref<any[]>([])
+const reviews = ref<Comment[]>([])
 const loading = ref(false)
 const error = ref('')
 
@@ -74,8 +75,8 @@ onMounted(async () => {
     } else {
       error.value = res.msg || 'Failed to fetch reviews'
     }
-  } catch (e: any) {
-    error.value = e?.message || 'Failed to fetch reviews'
+  } catch (e: unknown) {
+    error.value = (e instanceof Error ? e.message : 'Failed to fetch reviews')
   } finally {
     loading.value = false
   }
