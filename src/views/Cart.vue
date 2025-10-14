@@ -74,7 +74,7 @@
 
           <!-- 商品信息（图片+名称） -->
           <div class="item-product">
-            <div class="product-image">
+            <div class="product-image" v-if="getProductImageUrl(item.product_info.pic_info)">
               <img 
                 :src="getProductImageUrl(item.product_info.pic_info)" 
                 :alt="item.product_info.name"
@@ -300,6 +300,7 @@ import { useCart } from '../composables/useCart'
 import { usePaymentAccount } from '../composables/usePaymentAccount'
 import { useCheckout } from '../composables/useCheckout'
 import { useRouter } from 'vue-router'
+import { S3_CONFIG } from '../config/api-endpoints'
 
 const router = useRouter()
 const { setCheckoutData } = useCheckout()
@@ -354,9 +355,15 @@ const topUpRules = {
  * 获取商品图片URL
  */
 const getProductImageUrl = (picInfo: string) => {
-  if (!picInfo) return '/src/assets/defaultimg.png'
-  // 假设图片存储在某个CDN或者静态资源目录
-  return `/public/img/${picInfo}`
+  if (!picInfo) return ''
+  
+  // 如果已经是完整URL，直接返回
+  if (picInfo.startsWith('http://') || picInfo.startsWith('https://')) {
+    return picInfo
+  }
+  
+  // 否则拼接S3基础URL
+  return `${S3_CONFIG.BASE_URL}${picInfo}`
 }
 
 /**
@@ -364,7 +371,8 @@ const getProductImageUrl = (picInfo: string) => {
  */
 const handleImageError = (event: Event) => {
   const img = event.target as HTMLImageElement
-  img.src = '/src/assets/defaultimg.png'
+  // 图片加载失败时隐藏图片
+  img.style.display = 'none'
 }
 
 /**

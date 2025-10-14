@@ -105,6 +105,187 @@
           </div>
         </div>
       </div>
+
+      <!-- 商品评论区域 -->
+      <div class="product-comments-section">
+        <!-- 评论标题和统计信息 -->
+        <div class="comments-header">
+          <h2>Customer Reviews</h2>
+          <div v-if="!commentsLoading && !commentsError" class="comments-summary-inline">
+            <span class="comments-count">{{ comments?.length || 0 }} review{{ (comments?.length || 0) !== 1 ? 's' : '' }}</span>
+            <div v-if="averageRating > 0" class="average-rating-inline">
+              <div class="stars">
+                <span v-for="star in 5" :key="star" class="star" :class="{ filled: star <= Math.round(averageRating) }">★</span>
+              </div>
+              <span class="rating-text">{{ averageRating.toFixed(1) }} out of 5</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 加载评论状态 -->
+        <div v-if="commentsLoading" class="comments-loading">
+          <p>Loading reviews...</p>
+        </div>
+
+        <!-- 评论错误状态 -->
+        <div v-if="commentsError" class="comments-error">
+          <p>{{ commentsError }}</p>
+          <button @click="fetchProductComments">Retry</button>
+        </div>
+
+        <!-- 评论列表 -->
+        <div v-if="!commentsLoading && !commentsError" class="comments-content">
+
+          <!-- 置顶评论 -->
+          <div v-if="pinnedReview" class="pinned-review">
+            <div class="pinned-label">Pinned Review</div>
+            <div class="comment-item minimal pinned">
+              <div class="comment-header minimal">
+                <div class="author-rating-row">
+                  <span class="comment-author">{{ getCommentAuthor(pinnedReview) }}</span>
+                  <el-rate
+                    v-model="pinnedReview.stars"
+                    :max="5"
+                    disabled
+                    size="small"
+                    :colors="['#c75d35','#c75d35','#c75d35']"
+                    class="comment-stars"
+                  />
+                </div>
+                <span class="comment-date">{{ formatDate(pinnedReview.created_at) }}</span>
+              </div>
+              <div class="comment-content minimal">
+                <span>{{ pinnedReview.content }}</span>
+                <div v-if="pinnedReview.pic_info && pinnedReview.pic_info.length > 0 && pinnedReview.pic_info[0]" class="comment-images minimal">
+                  <img 
+                    v-for="(pic, index) in pinnedReview.pic_info.filter(p => p && p.trim())" 
+                    :key="index"
+                    :src="`${S3_CONFIG.BASE_URL}${pic}`" 
+                    :alt="`评论图片${index + 1}`"
+                    class="comment-image"
+                  />
+                </div>
+              </div>
+              <div class="comment-likes minimal" @click="handleLike(pinnedReview)">
+                <svg
+                  class="comment-likes-icon"
+                  viewBox="0 0 24 24"
+                  width="18"
+                  height="18"
+                  :fill="pinnedReview.current_user_liked ? '#c75d35' : 'none'"
+                  :stroke="pinnedReview.current_user_liked ? 'none' : '#c75d35'"
+                  :stroke-width="pinnedReview.current_user_liked ? 0 : 2"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41 1.01 4.5 2.09C13.09 4.01 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                </svg>
+                <span class="comment-likes-count">{{ pinnedReview.likes }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 评论列表 -->
+            <div v-if="comments && comments.length > 0" class="comments-list">
+              <div v-for="comment in comments.filter(c => !c.parent_id || c.parent_id === '')" :key="comment.id" class="comment-thread">
+                <!-- 顶级评论 -->
+                <div class="comment-item minimal">
+                  <div class="comment-header minimal">
+                    <div class="author-rating-row">
+                      <span class="comment-author">{{ getCommentAuthor(comment) }}</span>
+                      <el-rate
+                        v-model="comment.stars"
+                        :max="5"
+                        disabled
+                        size="small"
+                        :colors="['#c75d35','#c75d35','#c75d35']"
+                        class="comment-stars"
+                      />
+                    </div>
+                    <span class="comment-date">{{ formatDate(comment.created_at) }}</span>
+                  </div>
+                  <div class="comment-content minimal">
+                    <span>{{ comment.content }}</span>
+                    <div v-if="comment.pic_info && comment.pic_info.length > 0 && comment.pic_info[0]" class="comment-images minimal">
+                      <img 
+                        v-for="(pic, index) in comment.pic_info.filter(p => p && p.trim())" 
+                        :key="index"
+                        :src="`${S3_CONFIG.BASE_URL}${pic}`" 
+                        :alt="`评论图片${index + 1}`"
+                        class="comment-image"
+                      />
+                    </div>
+                  </div>
+                  <div class="comment-likes minimal" @click="handleLike(comment)">
+                    <svg
+                      class="comment-likes-icon"
+                      viewBox="0 0 24 24"
+                      width="18"
+                      height="18"
+                      :fill="comment.current_user_liked ? '#c75d35' : 'none'"
+                      :stroke="comment.current_user_liked ? 'none' : '#c75d35'"
+                      :stroke-width="comment.current_user_liked ? 0 : 2"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41 1.01 4.5 2.09C13.09 4.01 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                    </svg>
+                    <span class="comment-likes-count">{{ comment.likes }}</span>
+                  </div>
+                </div>
+                <!-- 回复评论 -->
+                <div v-for="reply in comments.filter(c => c.parent_id === comment.id)" :key="reply.id" class="comment-reply">
+                  <div class="comment-item minimal reply">
+                    <div class="comment-header minimal">
+                      <div class="author-rating-row">
+                        <span class="comment-author">{{ getCommentAuthor(reply) }}</span>
+                        <el-rate
+                          v-model="reply.stars"
+                          :max="5"
+                          disabled
+                          size="small"
+                          :colors="['#c75d35','#c75d35','#c75d35']"
+                          class="comment-stars"
+                        />
+                      </div>
+                      <span class="comment-date">{{ formatDate(reply.created_at) }}</span>
+                    </div>
+                    <div class="comment-content minimal">
+                      <span>{{ reply.content }}</span>
+                      <div v-if="reply.pic_info && reply.pic_info.length > 0 && reply.pic_info[0]" class="comment-images minimal">
+                        <img 
+                          v-for="(pic, index) in reply.pic_info.filter(p => p && p.trim())" 
+                          :key="index"
+                          :src="`${S3_CONFIG.BASE_URL}${pic}`" 
+                          :alt="`评论图片${index + 1}`"
+                          class="comment-image"
+                        />
+                      </div>
+                    </div>
+                    <div class="comment-likes minimal" @click="handleLike(reply)">
+                      <svg
+                        class="comment-likes-icon"
+                        viewBox="0 0 24 24"
+                        width="18"
+                        height="18"
+                        :fill="reply.current_user_liked ? '#c75d35' : 'none'"
+                        :stroke="reply.current_user_liked ? 'none' : '#c75d35'"
+                        :stroke-width="reply.current_user_liked ? 0 : 2"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41 1.01 4.5 2.09C13.09 4.01 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                      </svg>
+                      <span class="comment-likes-count">{{ reply.likes }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          <!-- 无评论状态 -->
+          <div v-else class="no-comments">
+            <p>No reviews yet. Be the first to review this product!</p>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -115,12 +296,14 @@
  * @description 显示单个商品的详细信息，包括图片、描述、价格等
  */
 
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getProductDetail } from '../api/product'
 import { addToCart as addToCartAPI } from '../api/cart'
+import { getProductComments, likeComment } from '../api/comment'
 import type { Product } from '../api/product'
+import type { Comment } from '../api/comment'
 import { S3_CONFIG } from '../config/api-endpoints'
 
 // 默认图片
@@ -136,6 +319,13 @@ const loading = ref(false)
 const error = ref<string | null>(null)
 const quantity = ref(1)
 const addingToCart = ref(false)
+
+// 评论相关响应式数据
+const comments = ref<Comment[]>([])
+const commentsLoading = ref(false)
+const commentsError = ref<string | null>(null)
+const pinnedReview = ref<Comment | null>(null)
+
 
 // 获取商品详情
 const fetchProductDetail = async () => {
@@ -161,6 +351,44 @@ const fetchProductDetail = async () => {
     loading.value = false
   }
 }
+
+// 在组件挂载后获取评论，不与商品详情绑定
+const initializeComments = async () => {
+  const productId = route.params.id as string
+  if (productId) {
+    await fetchProductComments()
+  }
+}
+
+// 获取商品评论
+const fetchProductComments = async () => {
+  const productId = route.params.id as string
+  if (!productId) {
+    return
+  }
+
+  commentsLoading.value = true
+  commentsError.value = null
+
+  try {
+    const result = await getProductComments(parseInt(productId))
+    comments.value = result.comments
+    pinnedReview.value = result.pinnedReview
+    console.log('Product comments fetched successfully:', result)
+  } catch (err) {
+    commentsError.value = err instanceof Error ? err.message : 'Failed to fetch product comments'
+    console.error('Failed to fetch product comments:', err)
+  } finally {
+    commentsLoading.value = false
+  }
+}
+
+// 计算平均评分
+const averageRating = computed(() => {
+  if (!comments.value || comments.value.length === 0) return 0
+  const totalRating = comments.value.reduce((sum, comment) => sum + comment.stars, 0)
+  return totalRating / comments.value.length
+})
 
 // 检查商品是否缺货
 const isOutOfStock = (product: Product) => {
@@ -255,9 +483,44 @@ const buyNow = () => {
   alert(`Proceeding to checkout with ${quantity.value} item(s)`)
 }
 
-// 组件挂载时获取商品详情
-onMounted(() => {
-  fetchProductDetail()
+// 格式化日期
+const formatDate = (dateString: string) => {
+  const date = new Date(dateString)
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  })
+}
+
+// 处理点赞
+const handleLike = async (comment: Comment) => {
+  if (!isLoggedIn()) {
+    ElMessage.info('请先登录后点赞');
+    return;
+  }
+  if (comment.current_user_liked) return; // 已点赞不可重复
+  const success = await likeComment(comment.id);
+  if (success) {
+    comment.likes += 1;
+    comment.current_user_liked = true;
+  } else {
+    ElMessage.error('点赞失败，请稍后重试');
+  }
+}
+
+// 获取评论作者名字
+const getCommentAuthor = (comment: Comment) => {
+  if (comment.user_id === 1 && comment.parent_id && comment.parent_id !== '') {
+    return 'CeramiCraft Store';
+  }
+  return comment.is_anonymous ? 'Anonymous' : `User ${comment.user_id}`;
+}
+
+// 组件挂载时获取商品详情和评论
+onMounted(async () => {
+  await fetchProductDetail()
+  await initializeComments()
 })
 </script>
 
@@ -572,6 +835,324 @@ onMounted(() => {
   margin-bottom: 4px;
 }
 
+/* 评论区域样式 */
+.product-comments-section {
+  margin-top: 60px;
+  padding-top: 40px;
+  border-top: 2px solid #eee;
+}
+
+/* 评论标题和统计信息在同一行 */
+.comments-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.comments-header h2 {
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+}
+
+/* 内联评论统计样式 */
+.comments-summary-inline {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.comments-summary-inline .comments-count {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #666;
+  margin: 0;
+}
+
+.average-rating-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.average-rating-inline .stars {
+  display: flex;
+  gap: 2px;
+}
+
+.average-rating-inline .star {
+  font-size: 1rem;
+  color: #ddd;
+  transition: color 0.2s;
+}
+
+.average-rating-inline .star.filled {
+  color: #ffc107;
+}
+
+.average-rating-inline .rating-text {
+  font-size: 0.9rem;
+  color: #666;
+  font-weight: 500;
+}
+
+/* 评论加载和错误状态 */
+.comments-loading, .comments-error {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.comments-loading p {
+  font-size: 1rem;
+  color: #666;
+}
+
+.comments-error p {
+  color: #e74c3c;
+  margin-bottom: 16px;
+  font-size: 1rem;
+}
+
+.comments-error button {
+  background: #c75d35;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.comments-error button:hover {
+  background: #a64d2a;
+}
+
+
+
+/* 评论列表 */
+.comments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.comment-item {
+  padding: 24px;
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  transition: box-shadow 0.2s;
+
+}
+.comment-item.minimal {
+  padding: 16px 20px;
+  border-radius: 8px;
+  border: 1px solid #f1f5f9;
+  background: #fff;
+  box-shadow: none;
+}
+.comment-header.minimal {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  gap: 12px;
+}
+.author-rating-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.comment-author {
+  font-weight: 600;
+  color: #333;
+  font-size: 1rem;
+}
+.comment-stars {
+  margin-left: 0;
+  font-size: 1rem;
+}
+.comment-date {
+  font-size: 0.85rem;
+  color: #888;
+}
+.comment-content.minimal {
+  color: #555;
+  line-height: 1.6;
+  font-size: 0.98rem;
+  margin-bottom: 4px;
+}
+.comment-images.minimal {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+.comment-image {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #e1e8ed;
+}
+.comment-likes.minimal {
+  margin-top: 8px;
+  font-size: 0.95rem;
+  color: #c75d35;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  user-select: none;
+  transition: opacity 0.2s;
+}
+.comment-likes.minimal:active {
+  opacity: 0.7;
+}
+.comment-actions.minimal {
+  margin-top: 8px;
+}
+.like-btn {
+  background: #fff;
+  color: #c75d35;
+  border: 1px solid #c75d35;
+  border-radius: 16px;
+  padding: 4px 16px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+.like-btn:hover {
+  background: #c75d35;
+  color: #fff;
+}
+.like-btn.liked {
+  background: #c75d35;
+  color: #fff;
+  border-color: #c75d35;
+}
+
+.comment-item:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.comment-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.comment-author {
+  font-weight: 600;
+  color: #333;
+  font-size: 1rem;
+}
+
+.comment-rating .stars {
+  gap: 1px;
+}
+
+.comment-rating .star {
+  font-size: 1rem;
+}
+
+.comment-date {
+  font-size: 0.85rem;
+  color: #888;
+}
+
+.comment-content {
+  color: #555;
+  line-height: 1.6;
+}
+
+.comment-content p {
+  margin: 0 0 12px 0;
+}
+
+.comment-images {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.comment-image {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #e1e8ed;
+}
+
+
+
+/* 置顶评论 */
+.pinned-review {
+  margin-bottom: 30px;
+  padding: 20px;
+  background: #fff8f0;
+  border: 2px solid #c75d35;
+  border-radius: 12px;
+}
+
+.pinned-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #c75d35;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+}
+
+.comment-item.pinned {
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+}
+
+.comment-item.pinned:hover {
+  box-shadow: none;
+}
+
+/* 评论线程 */
+.comment-thread {
+  margin-bottom: 32px;
+}
+
+/* 回复评论 */
+.comment-reply {
+  margin-left: 40px;
+  margin-top: 16px;
+  position: relative;
+}
+
+.comment-reply::before {
+  content: '';
+  position: absolute;
+  left: -20px;
+  top: 20px;
+  width: 20px;
+  height: 1px;
+  background: #ddd;
+}
+
+.comment-item.reply {
+  border-left: 2px solid #ddd;
+  padding-left: 16px;
+  background: #fafafa;
+}
+
 /* 响应式设计 */
 @media (max-width: 768px) {
   .product-detail-container {
@@ -589,6 +1170,23 @@ onMounted(() => {
   
   .thumbnail-images {
     justify-content: center;
+  }
+
+  .comments-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .comments-summary-inline {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .comment-header {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
 </style>

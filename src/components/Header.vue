@@ -31,6 +31,13 @@
         >
           Orders
         </div>
+          <div 
+            class="nav-tab" 
+            :class="{ active: currentRoute === 'MyReviews' }"
+            @click="goToRoute('MyReviews')"
+          >
+            My Reviews
+          </div>
       </div>
       
       <div class="actions">
@@ -69,6 +76,8 @@ const currentRoute = computed(() => {
     return 'Cart'
   } else if (route.name === 'CustomerOrders' || route.name === 'Orders') {
     return 'Orders'
+    } else if (route.name === 'MyReviews') {
+      return 'MyReviews'
   }
   return ''
 })
@@ -120,6 +129,12 @@ const goToRoute = (routeName: string) => {
     } else {
       router.push({ name: 'CustomerLogin' })
     }
+    } else if (routeName === 'MyReviews') {
+      if (isLoggedIn.value) {
+        router.push({ name: 'MyReviews' })
+      } else {
+        router.push({ name: 'CustomerLogin' })
+      }
   }
 }
 </script>

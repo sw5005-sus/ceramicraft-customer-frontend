@@ -70,12 +70,18 @@ const routes: Array<RouteRecordRaw> = [
             component: () => import('../views/Orders.vue'),
             meta: { requiresAuth: true }
           },
-          {
-            path: 'orders/:orderNo',
-            name: 'OrderDetail',
-            component: () => import('../views/OrderDetail.vue'),
-            meta: { requiresAuth: true }
-          }
+            {
+              path: 'orders/:orderNo',
+              name: 'OrderDetail',
+              component: () => import('../views/OrderDetail.vue'),
+              meta: { requiresAuth: true }
+            },
+            {
+              path: 'my-reviews',
+              name: 'MyReviews',
+              component: () => import('../views/MyReviews.vue'),
+              meta: { requiresAuth: true }
+            }
         ]
       }
     ]

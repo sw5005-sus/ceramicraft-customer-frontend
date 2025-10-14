@@ -65,6 +65,7 @@ export interface OrderListResponse {
 export interface OrderDetailItem {
   create_time: string
   id: number
+  pic_info?: string // 商品图片信息
   price: number
   product_id: number
   product_name: string
