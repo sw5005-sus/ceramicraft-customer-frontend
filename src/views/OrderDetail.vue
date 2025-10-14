@@ -83,10 +83,11 @@
             :key="item.id"
             class="order-item"
           >
-            <div class="item-image">
+            <div class="item-image" v-if="getProductImageUrl(item.pic_info || '')">
               <img 
-                src="/src/assets/defaultimg.png"
+                :src="getProductImageUrl(item.pic_info || '')"
                 :alt="item.product_name"
+                @error="handleImageError"
               />
             </div>
             <div class="item-details">
@@ -155,6 +156,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { Loading, Warning } from '@element-plus/icons-vue'
 import { getOrderDetail, type OrderDetail } from '../api/order'
 import BackButton from '../components/BackButton.vue'
+import { S3_CONFIG } from '../config/api-endpoints'
 
 const route = useRoute()
 const router = useRouter()
@@ -193,6 +195,30 @@ const loadOrderDetail = async () => {
  */
 const goBack = () => {
   router.push('/customer/orders')
+}
+
+/**
+ * 获取商品图片URL
+ */
+const getProductImageUrl = (picInfo: string) => {
+  if (!picInfo) return ''
+  
+  // 如果已经是完整URL，直接返回
+  if (picInfo.startsWith('http://') || picInfo.startsWith('https://')) {
+    return picInfo
+  }
+  
+  // 否则拼接S3基础URL
+  return `${S3_CONFIG.BASE_URL}${picInfo}`
+}
+
+/**
+ * 处理图片加载错误
+ */
+const handleImageError = (event: Event) => {
+  const img = event.target as HTMLImageElement
+  // 图片加载失败时隐藏图片
+  img.style.display = 'none'
 }
 
 /**
