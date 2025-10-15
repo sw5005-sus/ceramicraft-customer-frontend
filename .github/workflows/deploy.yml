@@ -14,10 +14,59 @@ on:
             default: 'deploy'
             type: choice
             options:
-                - deploy
+                - deploy2docker
+                - deploy2cluster
 
 jobs:
-  deploy:
+  build:
+    if: ${{ github.event.inputs.command == 'deploy2cluster' }} 
+    runs-on: ubuntu-latest
+    env:
+      DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+      - name: login to dockerhub
+        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+      - name: build docker image
+        run: |
+          docker build -t "${DOCKER_HUB_USERNAME}/ceramicraft-customer-frontend:${{ github.event.inputs.version }}" .
+      - name: push to dockerhub
+        run: |
+          docker push "${DOCKER_HUB_USERNAME}/ceramicraft-customer-frontend:${{ github.event.inputs.version }}"
+
+  cluster-deploy:
+    if : ${{ github.event.inputs.command == 'deploy2cluster'}}
+    needs: build
+    runs-on: ubuntu-latest
+    env:
+      DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
+      YAML_FILE: vue_apps/overlays/customer_frontend/patch.yaml
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Checkout GitOps repo
+        uses: actions/checkout@v4
+        with:
+          repository: NUS-ISS-Agile-Team/ceramicraft-argocd-deploy.git
+          token: ${{ secrets.GITOPS_PAT }}
+          path: gitops
+          ref: main
+      - name: update YAML file
+        run: |
+          sed -i "s|image: .*$|image: ${DOCKER_HUB_USERNAME}/ceramicraft-customer-frontend:${{ github.event.inputs.version }}|g" gitops/${YAML_FILE}
+      - name: Commit and Push changes
+        run: |
+          cd gitops
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add ${YAML_FILE}
+          git commit -m "chore: update customer-frontend image to ${{ github.event.inputs.version }}" || exit 0
+          git push 
+  docker-deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
