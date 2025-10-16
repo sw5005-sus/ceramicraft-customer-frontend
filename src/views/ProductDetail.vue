@@ -305,6 +305,7 @@ import { getProductComments, likeComment } from '../api/comment'
 import type { Product } from '../api/product'
 import type { Comment } from '../api/comment'
 import { S3_CONFIG } from '../config/api-endpoints'
+import { useCheckout } from '../composables/useCheckout'
 
 // 默认图片
 import defaultImg from '../assets/defaultimg.png'
@@ -312,6 +313,9 @@ import defaultImg from '../assets/defaultimg.png'
 // 路由相关
 const route = useRoute()
 const router = useRouter()
+
+// 使用结账 composable
+const { setCheckoutData } = useCheckout()
 
 // 响应式数据
 const product = ref<Product | null>(null)
@@ -476,11 +480,25 @@ const buyNow = () => {
     return
   }
   
-  // TODO: 实现立即购买逻辑
-  console.log(`Buy now ${quantity.value} of product ${product.value.id}`)
+  // 创建结账商品项
+  const checkoutItem = {
+    id: Date.now(), // 使用时间戳作为临时ID
+    quantity: quantity.value,
+    product_info: {
+      id: product.value.id!,
+      name: product.value.name,
+      pic_info: product.value.pic_info,
+      price: product.value.price
+    },
+    total_price: product.value.price * quantity.value,
+    selected: true
+  }
   
-  // 这里可以跳转到结账页面
-  alert(`Proceeding to checkout with ${quantity.value} item(s)`)
+  // 设置结账数据
+  setCheckoutData([checkoutItem], null)
+  
+  // 跳转到结账页面
+  router.push({ name: 'CustomerCheckout' })
 }
 
 // 格式化日期
