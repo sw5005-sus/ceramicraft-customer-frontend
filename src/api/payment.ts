@@ -54,7 +54,11 @@ export const getPayAccountSelf = async (): Promise<PayAccountInfo> => {
     const response = await apiClient.get<PayAccountResponse>(PAYMENT_ENDPOINTS.PAY_ACCOUNT_SELF)
     
     if (response.data.code === 0) {
-      return response.data.data
+      // 处理balance字段，将最后两位作为小数点后的数字
+      const accountInfo = response.data.data
+      accountInfo.balance = accountInfo.balance / 100
+      
+      return accountInfo
     } else {
       throw new Error(response.data.err_msg || 'Failed to get payment account info')
     }
@@ -81,7 +85,11 @@ export const topUpAccount = async (redeemCode: string): Promise<TopUpData> => {
     console.log('Top-up response:', response.data)
     
     if (response.data.code === 0) {
-      return response.data.data
+      // 处理balance字段，将最后两位作为小数点后的数字
+      const topUpData = response.data.data
+      topUpData.current_balance = topUpData.current_balance / 100
+      
+      return topUpData
     } else {
       throw new Error(response.data.err_msg || 'Failed to top up account')
     }
