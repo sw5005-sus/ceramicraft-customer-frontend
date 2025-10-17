@@ -136,10 +136,6 @@
           <h2 class="section-title">Order Summary</h2>
           <div class="summary-card">
             <div class="summary-row">
-              <span class="label">Subtotal:</span>
-              <span class="value">{{ formatCurrency(orderDetail.pay_amount - orderDetail.shipping_fee - orderDetail.tax) }}</span>
-            </div>
-            <div class="summary-row">
               <span class="label">Shipping:</span>
               <span class="value">{{ formatCurrency(orderDetail.shipping_fee) }}</span>
             </div>
