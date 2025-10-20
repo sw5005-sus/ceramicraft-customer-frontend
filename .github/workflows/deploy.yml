@@ -9,17 +9,17 @@ on:
             default: 'latest'
             type: string
         command:
-            description: 'deploy'
+            description: 'deploy or restart'
             required: true
             default: 'deploy'
             type: choice
             options:
-                - deploy2docker
-                - deploy2cluster
+                - deploy
+                - restart
 
 jobs:
   build:
-    if: ${{ github.event.inputs.command == 'deploy2cluster' }} 
+    if: ${{ github.event.inputs.command == 'deploy' }} # ← 仅在 deploy 时构建
     runs-on: ubuntu-latest
     env:
       DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
@@ -27,7 +27,7 @@ jobs:
       - name: checkout
         uses: actions/checkout@v4
       - name: login to dockerhub
-        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef
+        uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
@@ -37,62 +37,25 @@ jobs:
       - name: push to dockerhub
         run: |
           docker push "${DOCKER_HUB_USERNAME}/ceramicraft-customer-frontend:${{ github.event.inputs.version }}"
-
-  cluster-deploy:
-    if : ${{ github.event.inputs.command == 'deploy2cluster'}}
+  deploy:
+    if : ${{ github.event.inputs.command == 'deploy'}}
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     env:
       DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
-      YAML_FILE: vue_apps/overlays/customer_frontend/patch.yaml
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Checkout GitOps repo
-        uses: actions/checkout@v4
-        with:
-          repository: NUS-ISS-Agile-Team/ceramicraft-argocd-deploy.git
-          token: ${{ secrets.GITOPS_PAT }}
-          path: gitops
-          ref: main
-      - name: update YAML file
+      - name: pull the docker image
         run: |
-          sed -i "s|image: .*$|image: ${DOCKER_HUB_USERNAME}/ceramicraft-customer-frontend:${{ github.event.inputs.version }}|g" gitops/${YAML_FILE}
-      - name: Commit and Push changes
+          docker pull "${DOCKER_HUB_USERNAME}/ceramicraft-customer-frontend:${{ github.event.inputs.version }}" 
+      - name: run docker container
         run: |
-          cd gitops
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git add ${YAML_FILE}
-          git commit -m "chore: update customer-frontend image to ${{ github.event.inputs.version }}" || exit 0
-          git push 
-  docker-deploy:
-    runs-on: ubuntu-latest
+          docker stop ceramicraft-customer-frontend || true
+          docker rm ceramicraft-customer-frontend || true
+          docker run -d --name ceramicraft-customer-frontend --network ceramicraft-network "${DOCKER_HUB_USERNAME}/ceramicraft-customer-frontend:${{ github.event.inputs.version }}"
+  restart:
+    if : ${{ github.event.inputs.command == 'restart'}}
+    runs-on: self-hosted
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'npm'
-      - name: Install & Build
+      - name: restart docker container
         run: |
-          npm ci
-          npm run build
-      - name: Add SSH key
-        env: 
-          SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-        run: |
-          mkdir -p ~/.ssh
-          echo "$SSH_KEY" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
-      - name: Push dist to server
-        run: |
-          rsync -avz --delete --exclude=.git \
-            dist/ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.TARGET_DIR }}/
-      - name: Reload Nginx
-        run: |
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "docker exec nginx nginx -s reload"
+          docker restart ceramicraft-customer-frontend || true
