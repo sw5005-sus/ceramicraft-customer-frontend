@@ -1,6 +1,7 @@
 import { ref, computed } from 'vue';
 import { getProductList } from '../api/product';
 import type { Product, ProductListParams } from '../api/product';
+import { S3_CONFIG } from '../config/api-endpoints';
 
 export function useProductList() {
   const products = ref<Product[]>([]);
@@ -15,6 +16,38 @@ export function useProductList() {
     order_by: 0,
     status: ''
   });
+
+  // 解析 pic_info 字符串为数组
+  const parsePicInfo = (picInfo: string): string[] => {
+    if (!picInfo) return [];
+    
+    try {
+      // 尝试解析为 JSON 数组
+      const parsed = JSON.parse(picInfo);
+      if (Array.isArray(parsed)) {
+        return parsed.filter(item => typeof item === 'string');
+      }
+    } catch {
+      // 如果解析失败，当作单个文件名处理
+    }
+    
+    // 如果不是 JSON 数组格式，当作单个文件名
+    return [picInfo];
+  };
+
+  // 获取第一个图片
+  const getFirstImage = (picInfo: string): string => {
+    const images = parsePicInfo(picInfo);
+    return images.length > 0 ? images[0] : '';
+  };
+
+  // 获取第一个图片的完整 S3 URL
+  const getFirstImageUrl = (picInfo: string): string => {
+    const firstImage = getFirstImage(picInfo);
+    if (!firstImage) return '';
+    if (firstImage.startsWith('http://') || firstImage.startsWith('https://')) return firstImage;
+    return `${S3_CONFIG.BASE_URL}${firstImage}`;
+  };
 
   const fetchProducts = async (params: ProductListParams = {}) => {
     loading.value = true;
@@ -100,6 +133,8 @@ export function useProductList() {
     filterByCategory,
     sortProducts,
     loadMore,
-    resetSearch
+    resetSearch,
+    getFirstImage,
+    getFirstImageUrl
   };
 }

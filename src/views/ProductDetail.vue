@@ -23,10 +23,15 @@
           
           <!-- 缩略图 -->
           <div class="thumbnail-images">
-            <div class="thumbnail-item active">
-              <img :src="getProductImage(product)" :alt="product.name" />
+            <div 
+              v-for="(image, index) in getAllImages(product.pic_info)" 
+              :key="index"
+              class="thumbnail-item"
+              :class="{ active: index === activeImageIndex }"
+              @click="setActiveImage(index)"
+            >
+              <img :src="getImageUrl(image)" :alt="`${product.name} ${index + 1}`" />
             </div>
-            <!-- 可以添加更多缩略图 -->
           </div>
         </div>
 
@@ -330,6 +335,9 @@ const commentsLoading = ref(false)
 const commentsError = ref<string | null>(null)
 const pinnedReview = ref<Comment | null>(null)
 
+// 图片相关响应式数据
+const activeImageIndex = ref(0)
+
 
 // 获取商品详情
 const fetchProductDetail = async () => {
@@ -402,14 +410,74 @@ const isOutOfStock = (product: Product) => {
 // 获取商品图片
 const getProductImage = (product: Product) => {
   if (product.pic_info && product.pic_info.trim()) {
-    // 如果pic_info已经是完整的URL，直接返回
-    if (product.pic_info.startsWith('http://') || product.pic_info.startsWith('https://')) {
-      return product.pic_info
+    // 解析 pic_info 获取所有图片
+    const images = getAllImages(product.pic_info)
+    if (images.length > 0) {
+      const activeImage = images[activeImageIndex.value] || images[0]
+      // 如果已经是完整的URL，直接返回
+      if (activeImage.startsWith('http://') || activeImage.startsWith('https://')) {
+        return activeImage
+      }
+      // 否则拼接S3基础URL
+      return `${S3_CONFIG.BASE_URL}${activeImage}`
     }
-    // 否则拼接S3基础URL
-    return `${S3_CONFIG.BASE_URL}${product.pic_info}`
   }
   return defaultImg
+}
+
+// 获取单个图片的URL
+const getImageUrl = (image: string) => {
+  if (image.startsWith('http://') || image.startsWith('https://')) {
+    return image
+  }
+  return `${S3_CONFIG.BASE_URL}${image}`
+}
+
+// 设置激活的图片
+const setActiveImage = (index: number) => {
+  activeImageIndex.value = index
+}
+
+// 解析 pic_info 字符串为数组
+const parsePicInfo = (picInfo: string): string[] => {
+  console.log('parsePicInfo input:', picInfo);
+  if (!picInfo) {
+    console.log('parsePicInfo: empty input, returning []');
+    return [];
+  }
+  
+  try {
+    // 尝试解析为 JSON 数组
+    const parsed = JSON.parse(picInfo);
+    console.log('parsePicInfo: JSON.parse result:', parsed);
+    if (Array.isArray(parsed)) {
+      const filtered = parsed.filter(item => typeof item === 'string');
+      console.log('parsePicInfo: filtered array:', filtered);
+      return filtered;
+    } else {
+      console.log('parsePicInfo: parsed is not array');
+    }
+  } catch (error) {
+    console.log('parsePicInfo: JSON.parse failed:', error);
+  }
+  
+  // 如果不是 JSON 数组格式，当作单个文件名
+  console.log('parsePicInfo: treating as single filename:', [picInfo]);
+  return [picInfo];
+}
+
+// 获取第一个图片
+const getFirstImage = (picInfo: string): string => {
+  const images = parsePicInfo(picInfo);
+  console.log('getFirstImage: parsed images:', images);
+  const first = images.length > 0 ? images[0] : '';
+  console.log('getFirstImage: first image:', first);
+  return first;
+}
+
+// 获取所有图片数组
+const getAllImages = (picInfo: string): string[] => {
+  return parsePicInfo(picInfo);
 }
 
 // 格式化价格，将分转换为元并保留两位小数
