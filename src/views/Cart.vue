@@ -357,13 +357,58 @@ const topUpRules = {
 const getProductImageUrl = (picInfo: string) => {
   if (!picInfo) return ''
   
-  // 如果已经是完整URL，直接返回
-  if (picInfo.startsWith('http://') || picInfo.startsWith('https://')) {
-    return picInfo
+  // 解析 pic_info 获取第一个图片
+  const firstImage = getFirstImage(picInfo)
+  if (firstImage) {
+    // 如果已经是完整URL，直接返回
+    if (firstImage.startsWith('http://') || firstImage.startsWith('https://')) {
+      return firstImage
+    }
+    // 否则拼接S3基础URL
+    return `${S3_CONFIG.BASE_URL}${firstImage}`
+  }
+  return ''
+}
+
+/**
+ * 解析 pic_info 字符串为数组
+ */
+const parsePicInfo = (picInfo: string): string[] => {
+  console.log('parsePicInfo input:', picInfo);
+  if (!picInfo) {
+    console.log('parsePicInfo: empty input, returning []');
+    return [];
   }
   
-  // 否则拼接S3基础URL
-  return `${S3_CONFIG.BASE_URL}${picInfo}`
+  try {
+    // 尝试解析为 JSON 数组
+    const parsed = JSON.parse(picInfo);
+    console.log('parsePicInfo: JSON.parse result:', parsed);
+    if (Array.isArray(parsed)) {
+      const filtered = parsed.filter(item => typeof item === 'string');
+      console.log('parsePicInfo: filtered array:', filtered);
+      return filtered;
+    } else {
+      console.log('parsePicInfo: parsed is not array');
+    }
+  } catch (error) {
+    console.log('parsePicInfo: JSON.parse failed:', error);
+  }
+  
+  // 如果不是 JSON 数组格式，当作单个文件名
+  console.log('parsePicInfo: treating as single filename:', [picInfo]);
+  return [picInfo];
+}
+
+/**
+ * 获取第一个图片
+ */
+const getFirstImage = (picInfo: string): string => {
+  const images = parsePicInfo(picInfo);
+  console.log('getFirstImage: parsed images:', images);
+  const first = images.length > 0 ? images[0] : '';
+  console.log('getFirstImage: first image:', first);
+  return first;
 }
 
 /**
