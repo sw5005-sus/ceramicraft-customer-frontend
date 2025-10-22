@@ -10,7 +10,7 @@
       <div v-else-if="error" class="comments-error"><p>{{ error }}</p></div>
       <div v-else>
         <div v-if="reviews.length > 0" class="comments-list">
-          <div v-for="comment in reviews" :key="comment.id" class="comment-item minimal">
+          <div v-for="comment in reviews" :key="comment.id" class="comment-item minimal" @click="goToProduct(comment.product_id)">
             <div class="comment-header minimal">
               <div class="author-rating-row">
                 <span class="comment-author">{{ comment.is_anonymous ? 'Anonymous' : `User ${comment.user_id}` }}</span>
@@ -24,7 +24,7 @@
                 <img v-for="(pic, index) in comment.pic_info.filter((p: string) => p && p.trim())" :key="index" :src="getImageUrl(pic)" :alt="`评论图片${index + 1}`" class="comment-image" />
               </div>
             </div>
-            <div class="comment-likes minimal">
+            <div class="comment-likes minimal" @click.stop="handleLike(comment)">
               <svg class="comment-likes-icon" viewBox="0 0 24 24" width="18" height="18" :fill="comment.current_user_liked ? '#c75d35' : 'none'" :stroke="comment.current_user_liked ? 'none' : '#c75d35'" :stroke-width="comment.current_user_liked ? 0 : 2" xmlns="http://www.w3.org/2000/svg">
                 <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41 1.01 4.5 2.09C13.09 4.01 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
               </svg>
@@ -41,11 +41,12 @@
 <script setup lang="ts">
 
 import { ref, onMounted } from 'vue'
-
-import { getUserComments } from '../api/comment'
+import { useRouter } from 'vue-router'
+import { getUserComments, likeComment } from '../api/comment'
 import type { Comment } from '../api/comment'
 import { S3_CONFIG } from '../config/api-endpoints'
 
+const router = useRouter()
 const reviews = ref<Comment[]>([])
 const loading = ref(false)
 const error = ref('')
@@ -63,6 +64,22 @@ const formatDate = (dateString: string) => {
     month: 'long',
     day: 'numeric'
   })
+}
+
+const handleLike = async (comment: Comment) => {
+  try {
+    const success = await likeComment(comment.id)
+    if (success) {
+      comment.current_user_liked = !comment.current_user_liked
+      comment.likes += comment.current_user_liked ? 1 : -1
+    }
+  } catch (error) {
+    console.error('Failed to like comment:', error)
+  }
+}
+
+const goToProduct = (productId: number) => {
+  router.push({ name: 'ProductDetail', params: { id: productId } })
 }
 
 onMounted(async () => {

@@ -18,7 +18,7 @@ export interface Product {
   price: number;
   desc: string;
   stock: number;
-  pic_info: string;
+  pic_info: string; // 保持为字符串类型，在前端解析
   status: number;
   // 详情页额外字段
   dimensions?: string;

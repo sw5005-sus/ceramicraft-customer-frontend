@@ -82,7 +82,7 @@
                 size="small" 
                 @click="confirmDeliveryOrder(order.order_no)"
               >
-                Confirm Receipt
+                Confirm Receive
               </el-button>
             </div>
           </div>
