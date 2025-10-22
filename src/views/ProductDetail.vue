@@ -466,15 +466,6 @@ const parsePicInfo = (picInfo: string): string[] => {
   return [picInfo];
 }
 
-// 获取第一个图片
-const getFirstImage = (picInfo: string): string => {
-  const images = parsePicInfo(picInfo);
-  console.log('getFirstImage: parsed images:', images);
-  const first = images.length > 0 ? images[0] : '';
-  console.log('getFirstImage: first image:', first);
-  return first;
-}
-
 // 获取所有图片数组
 const getAllImages = (picInfo: string): string[] => {
   return parsePicInfo(picInfo);
