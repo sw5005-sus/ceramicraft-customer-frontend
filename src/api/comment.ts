@@ -4,7 +4,7 @@ import axios from 'axios'
  */
 export async function getUserComments() {
   const token = localStorage.getItem('userToken')
-  const res = await axios.get('/api/comment-ms/v1/customer/list/user', {
+  const res = await axios.get('/api/comment-ms/v1/customer/reviews/user', {
     headers: {
       'accept': 'application/json',
       'authtoken': token || ''
@@ -19,8 +19,8 @@ export const likeComment = async (review_id: string): Promise<boolean> => {
   const token = localStorage.getItem('userToken') || '';
   try {
     const response = await request.post<{ status: number }>(
-      '/comment-ms/v1/customer/like',
-      { review_id },
+      `/api/comment-ms/v1/customer/reviews/${review_id}/like`,
+      {},
       {
         headers: {
           'auth-token': token,
@@ -98,7 +98,7 @@ export const getProductComments = async (productId: number): Promise<{ comments:
   try {
     console.log('Getting product comments for product ID:', productId)
     
-    const response = await request.get<GetProductCommentsResponse>(`/comment-ms/v1/customer/list/product/${productId}`)
+    const response = await request.get<GetProductCommentsResponse>(`/comment-ms/v1/customer/reviews/product/${productId}`)
     
     console.log('Product comments fetched successfully:', response)
     
@@ -124,7 +124,7 @@ export const createComment = async (commentData: CreateCommentRequest): Promise<
   try {
     console.log('Creating comment with data:', commentData)
     
-    const response = await request.post<CreateCommentResponse>('/comment-ms/v1/customer/create', commentData)
+    const response = await request.post<CreateCommentResponse>('/comment-ms/v1/customer/reviews', commentData)
     
     console.log('Comment created successfully:', response)
     

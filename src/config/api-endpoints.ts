@@ -38,7 +38,7 @@ export const USER_ENDPOINTS = {
 // 商品服务相关端点
 export const PRODUCT_ENDPOINTS = {
   // 商品列表
-  LIST: `${SERVICE_PATHS.PRODUCT_MS}/list`,
+  LIST: `${SERVICE_PATHS.PRODUCT_MS}/products`,
   
   // 商品详情
   DETAIL: `${SERVICE_PATHS.PRODUCT_MS}/product`,

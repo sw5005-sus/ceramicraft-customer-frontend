@@ -138,7 +138,7 @@ export const createOrder = async (orderData: CreateOrderRequest): Promise<string
   try {
     console.log('Creating order with data:', orderData)
     
-    const response = await request.post<CreateOrderResponse>('/order-ms/v1/customer/create', orderData)
+    const response = await request.post<CreateOrderResponse>('/order-ms/v1/customer/orders', orderData)
     
     console.log('Order created successfully:', response)
     
@@ -160,7 +160,7 @@ export const getOrderList = async (params: OrderListRequest): Promise<{ orders: 
   try {
     console.log('Getting order list with params:', params)
     
-    const response = await request.post<OrderListResponse>('/order-ms/v1/customer/list', params)
+    const response = await request.post<OrderListResponse>('/order-ms/v1/customer/orders/list', params)
     
     console.log('Order list fetched successfully:', response)
     
@@ -182,7 +182,7 @@ export const getOrderDetail = async (orderNo: string): Promise<OrderDetail> => {
   try {
     console.log('Getting order detail for order:', orderNo)
     
-    const response = await request.get<OrderDetailResponse>(`/order-ms/v1/customer/detail/${orderNo}`)
+    const response = await request.get<OrderDetailResponse>(`/order-ms/v1/customer/orders/${orderNo}`)
     
     console.log('Order detail fetched successfully:', response)
     
@@ -204,11 +204,7 @@ export const confirmDelivery = async (orderNo: string): Promise<void> => {
   try {
     console.log('Confirming delivery for order:', orderNo)
     
-    const requestData: ConfirmDeliveryRequest = {
-      order_no: orderNo
-    }
-    
-    const response = await request.post<ConfirmDeliveryResponse>('/order-ms/v1/customer/confirm', requestData)
+    const response = await request.patch<ConfirmDeliveryResponse>(`/order-ms/v1/customer/orders/${orderNo}/confirm`)
     
     console.log('Delivery confirmed successfully:', response)
     
