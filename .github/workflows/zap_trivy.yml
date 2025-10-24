@@ -1,4 +1,4 @@
-name: ZAP Security Scan
+name: ZAP & Trivy Security Scan
 
 on:
   push:
@@ -14,7 +14,7 @@ jobs:
     steps:
       # ---- ① 检出源码 ----
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       # ---- ② 安装 Node 与依赖 ----
       - name: Setup Node
@@ -29,7 +29,27 @@ jobs:
         run: npm run build
         # 产出目录 dist (vite) 或 build (vue-cli)
 
-      # ---- ④ 起本地 HTTP 服务器 ----
+      # ---- ④ 构建 Docker 镜像 ----
+      - name: Build Docker Image
+        run: |
+          docker build -t ceramicraft-customer-frontend:${{ github.sha }} .
+          docker tag ceramicraft-customer-frontend:${{ github.sha }} ceramicraft-customer-frontend:latest
+
+      # ---- ⑤ Trivy 镜像漏洞扫描 ----
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'ceramicraft-customer-frontend:latest'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      # ---- ⑥ 起本地 HTTP 服务器 ----
       - name: Serve site for ZAP
         run: |
           # 启动 HTTP 服务器（这里用 vite 自带的）
@@ -37,7 +57,7 @@ jobs:
           # 等待监听成功
           timeout 60 bash -c 'until nc -z 127.0.0.1 4173; do sleep 1; done'
 
-      # ---- ⑤ ZAP Full Scan ----
+      # ---- ⑦ ZAP Full Scan ----
       - name: Run OWASP ZAP Full Scan
         uses: zaproxy/action-full-scan@v0.12.0
         with:
