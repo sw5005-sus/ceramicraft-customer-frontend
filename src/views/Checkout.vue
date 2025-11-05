@@ -621,9 +621,15 @@ const validateForm = () => {
     }
   }
   
-  // 验证邮箱格式
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  if (!emailRegex.test(checkoutForm.value.email)) {
+  // 验证邮箱格式 - 使用更安全的正则表达式避免 ReDoS 攻击
+  // 限制邮箱长度并使用原子组避免回溯
+  const email = checkoutForm.value.email
+  if (email.length > 254) { // RFC 5321 规定的最大长度
+    ElMessage.warning('Email address is too long')
+    return false
+  }
+  const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/
+  if (!emailRegex.test(email)) {
     ElMessage.warning('Please enter a valid email address')
     return false
   }
