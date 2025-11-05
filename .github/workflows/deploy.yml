@@ -58,11 +58,14 @@ jobs:
       - name: Push dist to server
         env:
           CURRENT_SSH_HOST: ${{ steps.set_vars.outputs.ssh_host }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          TARGET_DIR: ${{ secrets.TARGET_DIR }}
         run: |
           rsync -avz --delete --exclude=.git \
-            dist/ ${{ secrets.SSH_USER }}@"$CURRENT_SSH_HOST":${{ secrets.TARGET_DIR }}/
+              dist/ "$SSH_USER@$CURRENT_SSH_HOST:$TARGET_DIR/"
       - name: Reload Nginx
         env:
           CURRENT_SSH_HOST: ${{ steps.set_vars.outputs.ssh_host }}
+          SSH_USER: ${{ secrets.SSH_USER }}
         run: |
-          ssh ${{ secrets.SSH_USER }}@"$CURRENT_SSH_HOST" "docker exec nginx nginx -s reload"
+            ssh "$SSH_USER@$CURRENT_SSH_HOST" "docker exec nginx nginx -s reload"
