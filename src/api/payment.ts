@@ -47,7 +47,7 @@ export interface TopUpResponse {
 
 /**
  * 获取当前用户的支付账户信息
- * 需要带 authtoken
+ * 鉴权由 apiClient 拦截器自动附加 Authorization: Bearer <token>
  */
 export const getPayAccountSelf = async (): Promise<PayAccountInfo> => {
   try {
@@ -70,7 +70,7 @@ export const getPayAccountSelf = async (): Promise<PayAccountInfo> => {
 
 /**
  * 充值账户余额
- * 需要带 authtoken
+ * 鉴权由 apiClient 拦截器自动附加 Authorization: Bearer <token>
  */
 export const topUpAccount = async (redeemCode: string): Promise<TopUpData> => {
   try {

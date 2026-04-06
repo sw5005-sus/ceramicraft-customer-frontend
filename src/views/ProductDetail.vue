@@ -311,6 +311,8 @@ import type { Product } from '../api/product'
 import type { Comment } from '../api/comment'
 import { S3_CONFIG } from '../config/api-endpoints'
 import { useCheckout } from '../composables/useCheckout'
+import { authState } from '../auth/authState'
+import { signIn } from '../auth/zitadel'
 
 // 默认图片
 import defaultImg from '../assets/defaultimg.png'
@@ -476,9 +478,9 @@ const formatPrice = (price: number) => {
   return (price / 100).toFixed(2)
 }
 
-// 检查登录状态
+// 检查登录状态 — 使用 OIDC 认证状态
 const isLoggedIn = () => {
-  return !!localStorage.getItem('userToken')
+  return authState.isAuthenticated
 }
 
 // 数量控制
@@ -500,8 +502,8 @@ const addToCart = async () => {
   
   // 检查登录状态
   if (!isLoggedIn()) {
-    // 未登录，跳转到登录页
-    router.push({ name: 'CustomerLogin' })
+    // 未登录，跳转到 Zitadel 登录
+    signIn(route.fullPath)
     return
   }
   
@@ -534,8 +536,8 @@ const buyNow = () => {
   
   // 检查登录状态
   if (!isLoggedIn()) {
-    // 未登录，跳转到登录页
-    router.push({ name: 'CustomerLogin' })
+    // 未登录，跳转到 Zitadel 登录
+    signIn(route.fullPath)
     return
   }
   

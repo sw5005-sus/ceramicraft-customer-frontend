@@ -1,33 +1,27 @@
-import axios from 'axios'
+/**
+ * 评论相关 API 函数
+ * 所有需要鉴权的接口统一使用 request（内部通过拦截器自动附加 Authorization: Bearer <token>）
+ */
+import { request } from './api'
+
 /**
  * 获取当前用户发布的评论
  */
 export async function getUserComments() {
-  const token = localStorage.getItem('userToken')
-  const res = await axios.get('/api/comment-ms/v1/customer/reviews/user', {
-    headers: {
-      'accept': 'application/json',
-      'authtoken': token || ''
-    }
-  })
-  return res.data
+  const res = await request.get<{ status: number; data: Comment[]; msg: string; error: string }>(
+    '/comment-ms/v1/customer/reviews/user'
+  )
+  return res
 }
+
 /**
  * 点赞评论
  */
 export const likeComment = async (review_id: string): Promise<boolean> => {
-  const token = localStorage.getItem('userToken') || '';
   try {
     const response = await request.post<{ status: number }>(
-      `/api/comment-ms/v1/customer/reviews/${review_id}/like`,
-      {},
-      {
-        headers: {
-          'auth-token': token,
-          'Content-Type': 'application/json',
-          'accept': 'application/json',
-        },
-      }
+      `/comment-ms/v1/customer/reviews/${review_id}/like`,
+      {}
     );
     return response.status === 0;
   } catch (error) {
@@ -35,10 +29,6 @@ export const likeComment = async (review_id: string): Promise<boolean> => {
     return false;
   }
 };
-/**
- * 评论相关 API 函数
- */
-import { request } from './api'
 
 // 评论接口
 export interface Comment {
