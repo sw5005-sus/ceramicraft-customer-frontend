@@ -39,7 +39,7 @@ jobs:
 
       - name: Sync S3
         run: |
-          aws s3 sync dist/ s3://customer.ntdoc.net --delete
+          aws s3 sync dist/ s3://customer.ntdoc.site --delete
 
       - name: Invalidate CloudFront
         run: |
