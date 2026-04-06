@@ -1,20 +1,11 @@
 <template>
-  <component :is="layoutComponent">
-    <router-view />
-  </component>
+  <router-view />
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useRoute } from 'vue-router'
-import AppLayout from './layouts/AppLayout.vue'
-
-const route = useRoute()
-const layoutComponent = computed(() => {
-  if (route.meta.layout === 'none') {
-    return 'div'
-  }
-  return AppLayout
-})
+/**
+ * 根组件
+ * 布局由路由配置中的 AppLayout 组件管理，无需在此处再包裹
+ */
 </script>
 

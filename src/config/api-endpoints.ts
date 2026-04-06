@@ -19,6 +19,9 @@ export const USER_ENDPOINTS = {
   LOGIN: `${SERVICE_PATHS.USER_MS}/login`,
   LOGOUT: `${SERVICE_PATHS.USER_MS}/logout`,
   
+  // Zitadel OAuth 回调（注册用户 metadata）
+  OAUTH_CALLBACK: `${SERVICE_PATHS.USER_MS}/oauth-callback`,
+  
   // 用户注册和激活
   REGISTER: `${SERVICE_PATHS.USER_MS}/users`,
   ACTIVATE: `${SERVICE_PATHS.USER_MS}/users/activate`,

@@ -1,6 +1,7 @@
 import axios from 'axios';
 import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import type { ApiError } from '../types/api';
+import { userManager, signIn } from '../auth/zitadel';
 
 // API 路径配置已移动到 /src/config/api-endpoints.ts
 
@@ -16,26 +17,25 @@ const createApiInstance = (): AxiosInstance => {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
     },
-    // 允许携带凭据（cookies）
-    withCredentials: true,
+    // 不再使用 cookie 认证，改用 Bearer token
   });
 
-  // 请求拦截器
+  // 请求拦截器 — 从 UserManager 获取最新 access_token
   instance.interceptors.request.use(
-    (config) => {
-      // 添加认证 token
-      const token = localStorage.getItem('userToken');
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
+    async (config) => {
+      try {
+        const user = await userManager.getUser();
+        if (user && !user.expired) {
+          config.headers.Authorization = `Bearer ${user.access_token}`;
+        }
+      } catch (e) {
+        console.warn('[API] Failed to get user token:', e);
       }
       
       console.log('API Request:', {
         method: config.method?.toUpperCase(),
-        baseURL: config.baseURL,
-        url: config.url,
-        fullUrl: `${config.baseURL || ''}${config.url || ''}`,
-        data: config.data,
-        headers: config.headers,
+        url: `${config.baseURL || ''}${config.url || ''}`,
+        hasAuth: !!config.headers.Authorization,
       });
       
       return config;
@@ -66,9 +66,8 @@ const createApiInstance = (): AxiosInstance => {
         
         switch (status) {
           case 401:
-            // 未授权，清除 token 并跳转到登录页
-            localStorage.removeItem('userToken');
-            window.location.href = '/login';
+            // 未授权，触发 Zitadel 重新登录
+            signIn(window.location.pathname);
             break;
           case 403:
             console.error('访问被拒绝');

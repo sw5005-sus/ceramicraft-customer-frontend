@@ -307,7 +307,7 @@
 
 <script setup lang="ts">
 import { ref, nextTick } from 'vue'
-import { useRouter } from 'vue-router'
+
 import { ElMessageBox, ElMessage, ElButton, ElIcon, ElInput } from 'element-plus'
 import { Loading, User, Edit, House, Delete, Plus, Camera, Refresh, Warning, CreditCard, InfoFilled } from '@element-plus/icons-vue'
 import { logout } from '../api/auth'
@@ -319,8 +319,6 @@ import { getAvatarUrl } from '../utils/image'
 import AddressFormDialog from '../components/AddressFormDialog.vue'
 import type { UserAddress } from '../types/api'
 import type { AddressFormData } from '../components/AddressFormDialog.vue'
-
-const router = useRouter()
 
 // 使用用户资料 composable
 const { userProfile, userAddresses, loading, updating, addressLoading, error, loadUserProfile, loadUserAddresses, updateProfile } = useUserProfile()
@@ -597,16 +595,12 @@ const handleLogout = () => {
     type: 'warning',
   }).then(async () => {
     try {
-      // 调用退出登录API
+      // 调用 Zitadel OIDC 登出（会跳转到 Zitadel 登出页面）
       await logout()
-      ElMessage.success('Logout successful')
-      // 跳转到登录页面
-      router.push({ name: 'CustomerLogin' })
+      // signOut 会触发页面跳转，下面的代码通常不会执行
     } catch (error) {
-      // API调用失败，但本地状态已经清除，仍然跳转到登录页
-      console.error('Logout API failed:', error)
-      ElMessage.warning('Logout request failed, but local login state has been cleared')
-      router.push({ name: 'CustomerLogin' })
+      console.error('Logout failed:', error)
+      ElMessage.warning('Logout request failed. Please try again.')
     }
   }).catch(() => {
     // 用户取消，无需处理

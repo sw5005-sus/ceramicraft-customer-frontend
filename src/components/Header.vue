@@ -58,15 +58,17 @@
  * @description 包含品牌logo、导航菜单和用户操作区域的头部组件
  */
 
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { computed } from 'vue'
 import { User } from '@element-plus/icons-vue'
 import { useRouter, useRoute } from 'vue-router'
+import { authState } from '../auth/authState'
+import { signIn } from '../auth/zitadel'
 
 const router = useRouter()
 const route = useRoute()
 
-// 登录状态
-const isLoggedIn = ref(!!localStorage.getItem('userToken'))
+// 登录状态 — 使用 OIDC 响应式状态
+const isLoggedIn = computed(() => authState.isAuthenticated)
 
 // 当前路由状态
 const currentRoute = computed(() => {
@@ -82,34 +84,12 @@ const currentRoute = computed(() => {
   return ''
 })
 
-// 监听localStorage变化的函数
-const handleStorageChange = () => {
-  isLoggedIn.value = !!localStorage.getItem('userToken')
-}
-
-// 监听登录状态变化的自定义事件
-const handleLoginStatusChange = () => {
-  isLoggedIn.value = !!localStorage.getItem('userToken')
-}
-
-onMounted(() => {
-  // 监听localStorage变化
-  window.addEventListener('storage', handleStorageChange)
-  // 监听自定义登录状态变化事件
-  window.addEventListener('loginStatusChanged', handleLoginStatusChange)
-})
-
-onUnmounted(() => {
-  window.removeEventListener('storage', handleStorageChange)
-  window.removeEventListener('loginStatusChanged', handleLoginStatusChange)
-})
-
-// 跳转到个人中心或登录页
+// 跳转到个人中心或触发 Zitadel 登录
 const goProfile = () => {
   if (isLoggedIn.value) {
     router.push({ name: 'CustomerProfile' })
   } else {
-    router.push({ name: 'CustomerLogin' })
+    signIn('/customer/profile')
   }
 }
 
@@ -121,19 +101,19 @@ const goToRoute = (routeName: string) => {
     if (isLoggedIn.value) {
       router.push({ name: 'CustomerCart' })
     } else {
-      router.push({ name: 'CustomerLogin' })
+      signIn('/customer/cart')
     }
   } else if (routeName === 'Orders') {
     if (isLoggedIn.value) {
       router.push({ name: 'CustomerOrders' })
     } else {
-      router.push({ name: 'CustomerLogin' })
+      signIn('/customer/orders')
     }
     } else if (routeName === 'MyReviews') {
       if (isLoggedIn.value) {
         router.push({ name: 'MyReviews' })
       } else {
-        router.push({ name: 'CustomerLogin' })
+        signIn('/customer/my-reviews')
       }
   }
 }

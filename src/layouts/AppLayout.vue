@@ -36,7 +36,7 @@ import Footer from '../components/Footer.vue'
   margin: 0;
   padding: 0;
   height: 100%;
-  padding-top: 50px;
+  padding-top: 80px;
   padding-bottom: 50px;
   box-sizing: border-box;
   overflow-y: auto;

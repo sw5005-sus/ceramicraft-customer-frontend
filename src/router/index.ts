@@ -6,6 +6,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 import AppLayout from '../layouts/AppLayout.vue'
+import { authState } from '../auth/authState'
+import { signIn } from '../auth/zitadel'
 
 // 路由前缀常量
 const CUSTOMER_PREFIX = '/customer'
@@ -22,6 +24,12 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: CUSTOMER_PREFIX,
     children: [
+      // OIDC 回调路由（不使用 AppLayout，独立页面）
+      {
+        path: 'auth/callback',
+        name: 'AuthCallback',
+        component: () => import('../views/AuthCallback.vue'),
+      },
       // 使用 AppLayout 的页面
       {
         path: '',
@@ -44,7 +52,17 @@ const routes: Array<RouteRecordRaw> = [
           {
             path: 'login',
             name: 'CustomerLogin',
-            component: () => import('../views/Login.vue')
+            // 登录页已废弃 — 直接触发 Zitadel 登录跳转
+            beforeEnter: (_to, _from, next) => {
+              if (authState.isAuthenticated) {
+                next({ name: 'CustomerHome' })
+              } else {
+                signIn(`${CUSTOMER_PREFIX}/home`)
+                // 阻止导航，等待 Zitadel 重定向
+                next(false)
+              }
+            },
+            component: () => import('../views/AuthCallback.vue'),
           },
           {
             path: 'profile',
@@ -128,15 +146,18 @@ const router = createRouter({
 
 /**
  * 全局路由前置守卫
- * @description 处理路由跳转前的逻辑
+ * @description 使用 Zitadel OIDC 认证状态进行路由保护
  */
-router.beforeEach((to, _from, next) => {
-  // 简单的认证状态检查
-  const isAuthenticated = localStorage.getItem('userToken')
-  
-  // 如果访问需要认证的页面但未登录，重定向到登录页面
-  if (to.meta?.requiresAuth && !isAuthenticated) {
-    return next(`${CUSTOMER_PREFIX}/login`)
+router.beforeEach(async (to, _from, next) => {
+  // 回调路由不需要鉴权
+  if (to.name === 'AuthCallback') {
+    return next()
+  }
+
+  // 如果访问需要认证的页面但未登录，跳转到 Zitadel 登录页
+  if (to.meta?.requiresAuth && !authState.isAuthenticated) {
+    await signIn(to.fullPath)
+    return next(false) // 阻止当前导航，等待 Zitadel 重定向
   }
 
   // 其他情况正常跳转
