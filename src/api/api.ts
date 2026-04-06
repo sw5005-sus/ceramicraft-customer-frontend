@@ -6,10 +6,8 @@ import type { ApiError } from '../types/api';
 
 // 创建 axios 实例
 const createApiInstance = (): AxiosInstance => {
-  // 开发环境使用代理，生产环境直接访问后端
-  const baseURL = import.meta.env.DEV 
-    ? '/api'  // 开发环境使用 Vite 代理
-    : 'https://ceramicraft-customer-frontend';  // 生产环境使用域名访问
+  // 从环境变量读取后端 API 地址
+  const baseURL = import.meta.env.VITE_API_BASE_URL as string;
 
   const instance = axios.create({
     baseURL,
