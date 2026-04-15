@@ -172,7 +172,6 @@
           <el-rate
             v-model="reviewForm.rating"
             :max="5"
-            show-score
             text-color="#c75d35"
           />
         </div>
@@ -394,7 +393,7 @@ const getStatusClass = (status: string) => {
 const openReviewDialog = (item: OrderDetailItem) => {
   currentReviewItem.value = item
   reviewForm.value = {
-    rating: 5,
+    rating: 0,
     content: '',
     isAnonymous: false,
     images: []
