@@ -66,8 +66,10 @@ const createApiInstance = (): AxiosInstance => {
         
         switch (status) {
           case 401:
-            // 未授权，触发 Zitadel 重新登录
-            signIn(window.location.pathname);
+            // 只在需要认证的页面触发登录，商品详情等公开页面静默忽略
+            if (window.location.pathname.match(/\/(cart|checkout|orders|profile|my-reviews)/)) {
+              signIn(window.location.pathname);
+            }
             break;
           case 403:
             console.error('访问被拒绝');

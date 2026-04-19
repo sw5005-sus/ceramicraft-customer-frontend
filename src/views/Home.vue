@@ -79,6 +79,15 @@
       </div>
     </div>
     
+    <!-- Suggested for You carousel -->
+    <div v-if="currentSuggestion" class="suggestion-bar" @click="applySuggestion">
+      <span class="suggestion-label">Suggested for You:</span>
+      <span class="suggestion-content" :class="{ fading: suggestionFading }">
+        <span class="suggestion-keyword">{{ currentSuggestion.keyword }}</span>
+        <span class="suggestion-reason"> — {{ currentSuggestion.reason }}</span>
+      </span>
+    </div>
+
     <!-- 加载状态 -->
     <div v-if="loading" class="loading-state">
       <p>Loading products...</p>
@@ -130,7 +139,7 @@
  * @description 显示所有陶瓷产品的列表页面
  */
 
-import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { getProductList } from '../api/product'
 import type { Product, ProductListParams } from '../api/product'
@@ -162,11 +171,55 @@ const {
   aiRecommendationLoading,
   searchHistory,
   hotSearches,
+  suggestions,
   loading: aiLoading,
   doSearch: doAiSearch,
   loadSearchContext,
+  loadSuggestions,
   cancelStreams,
 } = useAiSearch()
+
+// Suggestions carousel
+const currentSuggestionIndex = ref(0)
+const suggestionFading = ref(false)
+let suggestionTimer: ReturnType<typeof setInterval> | null = null
+
+const currentSuggestion = computed(() =>
+  suggestions.value.length > 0 ? suggestions.value[currentSuggestionIndex.value] : null
+)
+
+function startSuggestionCarousel() {
+  stopSuggestionCarousel()
+  if (suggestions.value.length <= 1) return
+  suggestionTimer = setInterval(() => {
+    suggestionFading.value = true
+    setTimeout(() => {
+      currentSuggestionIndex.value = (currentSuggestionIndex.value + 1) % suggestions.value.length
+      suggestionFading.value = false
+    }, 400)
+  }, 3500)
+}
+
+function stopSuggestionCarousel() {
+  if (suggestionTimer) {
+    clearInterval(suggestionTimer)
+    suggestionTimer = null
+  }
+}
+
+watch(suggestions, (val) => {
+  if (val.length > 0) {
+    currentSuggestionIndex.value = 0
+    startSuggestionCarousel()
+  }
+})
+
+const applySuggestion = () => {
+  if (currentSuggestion.value) {
+    searchKeyword.value = currentSuggestion.value.keyword
+    handleSearch()
+  }
+}
 
 // 分类选项
 const categories = ref([
@@ -452,6 +505,7 @@ const handleResize = () => {
 onMounted(() => {
   fetchProducts()
   loadSearchContext()
+  loadSuggestions()
   document.addEventListener('click', handleClickOutside)
   window.addEventListener('resize', handleResize)
   window.addEventListener('scroll', handleResize)
@@ -460,6 +514,7 @@ onMounted(() => {
 // 组件卸载时移除事件监听
 onUnmounted(() => {
   cancelStreams()
+  stopSuggestionCarousel()
   document.removeEventListener('click', handleClickOutside)
   window.removeEventListener('resize', handleResize)
   window.removeEventListener('scroll', handleResize)
@@ -791,6 +846,51 @@ h1 {
 
 .error-state button:hover {
   background: #a64d2a;
+}
+
+/* Suggestion Carousel */
+.suggestion-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  margin-bottom: 20px;
+  background: #f9f7f5;
+  border: 1px solid #ede8e3;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+  overflow: hidden;
+}
+.suggestion-bar:hover {
+  background: #f3eeea;
+}
+.suggestion-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #c75d35;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.suggestion-content {
+  display: inline-flex;
+  gap: 4px;
+  transition: opacity 0.4s ease;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.suggestion-content.fading {
+  opacity: 0;
+}
+.suggestion-keyword {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #333;
+}
+.suggestion-reason {
+  font-size: 0.85rem;
+  color: #888;
 }
 
 /* AI Search Panel */
