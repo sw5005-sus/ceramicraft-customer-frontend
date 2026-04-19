@@ -84,7 +84,6 @@
       <span class="suggestion-label">Suggested for You:</span>
       <span class="suggestion-content" :class="{ fading: suggestionFading }">
         <span class="suggestion-keyword">{{ currentSuggestion.keyword }}</span>
-        <span class="suggestion-reason"> — {{ currentSuggestion.reason }}</span>
       </span>
     </div>
 
