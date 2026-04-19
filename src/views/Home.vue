@@ -4,12 +4,30 @@
     <div class="search-section">
       <!-- 搜索输入框 -->
       <div class="search-input-container">
-        <input 
-          v-model="searchKeyword" 
+        <input
+          v-model="searchKeyword"
           @keyup.enter="handleSearch"
-          class="search-input" 
-          placeholder="Enter product name" 
+          @focus="onSearchFocus"
+          @blur="onSearchBlur"
+          class="search-input"
+          placeholder="Search ceramics with AI..."
         />
+
+        <!-- AI Search Panel (history + hot) -->
+        <div v-show="showSearchPanel && (searchHistory.length > 0 || hotSearches.length > 0)" class="search-panel">
+          <div v-if="searchHistory.length > 0" class="search-panel-section">
+            <div class="search-panel-title">Recent Searches</div>
+            <div class="search-tags">
+              <span v-for="tag in searchHistory" :key="tag" class="search-tag" @mousedown.prevent="applySearchTag(tag)">{{ tag }}</span>
+            </div>
+          </div>
+          <div v-if="hotSearches.length > 0" class="search-panel-section">
+            <div class="search-panel-title">Trending</div>
+            <div class="search-tags">
+              <span v-for="tag in hotSearches" :key="tag" class="search-tag hot" @mousedown.prevent="applySearchTag(tag)">{{ tag }}</span>
+            </div>
+          </div>
+        </div>
       </div>
       
       <!-- 右侧控制区域 -->
@@ -72,12 +90,22 @@
       <button @click="fetchProducts">Retry</button>
     </div>
     
+    <!-- AI Recommendation (typewriter effect) -->
+    <div v-if="aiRecommendation || aiRecommendationLoading" class="ai-recommendation">
+      <div class="ai-recommendation-header">
+        <span class="ai-icon">&#x2728;</span>
+        <span>AI Recommendation</span>
+        <span v-if="aiRecommendationLoading" class="ai-typing">thinking...</span>
+      </div>
+      <div class="ai-recommendation-text">{{ aiRecommendation }}</div>
+    </div>
+
     <!-- 商品列表 -->
-    <div v-if="!loading && !error" class="products-list">
-      <div 
-        v-for="(item, index) in products" 
-        :key="item.id || index" 
-        class="product-card" 
+    <div v-if="!loading && !aiLoading && !error" class="products-list">
+      <div
+        v-for="(item, index) in (aiProducts.length > 0 ? aiProducts : products)"
+        :key="item.id || index"
+        class="product-card"
         style="cursor:pointer;"
         @click="item.id && goToProductDetail(item.id)"
       >
@@ -107,6 +135,7 @@ import { useRouter } from 'vue-router'
 import { getProductList } from '../api/product'
 import type { Product, ProductListParams } from '../api/product'
 import { S3_CONFIG } from '../config/api-endpoints'
+import { useAiSearch } from '../composables/useAiSearch'
 
 // 默认图片
 import defaultImg from '../assets/defaultimg.png'
@@ -124,6 +153,20 @@ const sortOrder = ref('0') // 默认选择0-按更新时间降序
 const selectedCategory = ref('')
 const showCategoryDropdown = ref(false)
 const showSortDropdown = ref(false)
+const showSearchPanel = ref(false)
+
+// AI Search
+const {
+  aiProducts,
+  aiRecommendation,
+  aiRecommendationLoading,
+  searchHistory,
+  hotSearches,
+  loading: aiLoading,
+  doSearch: doAiSearch,
+  loadSearchContext,
+  cancelStreams,
+} = useAiSearch()
 
 // 分类选项
 const categories = ref([
@@ -181,7 +224,29 @@ const fetchProducts = async () => {
 
 // 搜索处理
 const handleSearch = () => {
-  fetchProducts()
+  if (searchKeyword.value.trim()) {
+    doAiSearch(searchKeyword.value.trim(), (fallbackList) => {
+      products.value = fallbackList
+    })
+  } else {
+    aiProducts.value = []
+    aiRecommendation.value = ''
+    fetchProducts()
+  }
+  showSearchPanel.value = false
+}
+
+const onSearchFocus = () => {
+  showSearchPanel.value = true
+}
+
+const onSearchBlur = () => {
+  setTimeout(() => { showSearchPanel.value = false }, 200)
+}
+
+const applySearchTag = (keyword: string) => {
+  searchKeyword.value = keyword
+  handleSearch()
 }
 
 // 排序下拉菜单切换
@@ -386,6 +451,7 @@ const handleResize = () => {
 // 组件挂载时获取商品列表和添加事件监听
 onMounted(() => {
   fetchProducts()
+  loadSearchContext()
   document.addEventListener('click', handleClickOutside)
   window.addEventListener('resize', handleResize)
   window.addEventListener('scroll', handleResize)
@@ -393,6 +459,7 @@ onMounted(() => {
 
 // 组件卸载时移除事件监听
 onUnmounted(() => {
+  cancelStreams()
   document.removeEventListener('click', handleClickOutside)
   window.removeEventListener('resize', handleResize)
   window.removeEventListener('scroll', handleResize)
@@ -426,6 +493,7 @@ h1 {
 .search-input-container {
   flex: 1;
   max-width: 500px;
+  position: relative;
 }
 
 /* 搜索输入框 */
@@ -723,6 +791,76 @@ h1 {
 
 .error-state button:hover {
   background: #a64d2a;
+}
+
+/* AI Search Panel */
+.search-panel {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 0 0 8px 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  z-index: 100;
+  padding: 12px 16px;
+}
+.search-panel-section { margin-bottom: 12px; }
+.search-panel-section:last-child { margin-bottom: 0; }
+.search-panel-title {
+  font-size: 0.8rem;
+  color: #999;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.search-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+.search-tag {
+  padding: 4px 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 16px;
+  font-size: 0.85rem;
+  color: #555;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.search-tag:hover { border-color: #c75d35; color: #c75d35; }
+.search-tag.hot { border-color: #f0c040; color: #b8860b; }
+.search-tag.hot:hover { background: #fff8e1; }
+
+/* AI Recommendation */
+.ai-recommendation {
+  background: linear-gradient(135deg, #fdf6f0, #fff9f5);
+  border: 1px solid #f0ddd0;
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+}
+.ai-recommendation-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #c75d35;
+  margin-bottom: 8px;
+}
+.ai-icon { font-size: 1.1rem; }
+.ai-typing {
+  font-weight: 400;
+  font-size: 0.8rem;
+  color: #999;
+  animation: pulse 1.5s infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+.ai-recommendation-text {
+  font-size: 0.95rem;
+  color: #444;
+  line-height: 1.6;
 }
 
 /* 商品信息样式调整 */

@@ -9,8 +9,7 @@ export const SERVICE_PATHS = {
   PRODUCT_MS: '/product-ms/v1/customer',
   PRODUCT_MS_MERCHANT: '/product-ms/v1/merchant',
   PAYMENT_MS: '/payment-ms/v1/customer',
-  // 后续可以添加其他微服务路径
-  // ORDER_MS: '/order-ms/v1',
+  SEARCH_AGENT: '/search-agent/v1/customer',
 } as const;
 
 // 用户服务相关端点
@@ -67,6 +66,18 @@ export const PAYMENT_ENDPOINTS = {
   PAY_ACCOUNT_SELF: `${SERVICE_PATHS.PAYMENT_MS}/pay-accounts/self`,
   // 账户充值
   TOP_UP: `${SERVICE_PATHS.PAYMENT_MS}/pay-accounts/self/top-ups`,
+} as const;
+
+// AI 搜索 Agent 服务端点
+export const SEARCH_AGENT_ENDPOINTS = {
+  SEARCH: `${SERVICE_PATHS.SEARCH_AGENT}/search`,
+  RAG: `${SERVICE_PATHS.SEARCH_AGENT}/search/rag`,
+  RAG_STREAM: `${SERVICE_PATHS.SEARCH_AGENT}/search/rag/stream`,
+  SIMILAR: `${SERVICE_PATHS.SEARCH_AGENT}/search/similar`,
+  HISTORY: `${SERVICE_PATHS.SEARCH_AGENT}/search/history`,
+  HOT: `${SERVICE_PATHS.SEARCH_AGENT}/search/hot`,
+  SUGGESTIONS: `${SERVICE_PATHS.SEARCH_AGENT}/search/suggestions`,
+  INTENT_STREAM: `${SERVICE_PATHS.SEARCH_AGENT}/intent/stream`,
 } as const;
 
 // S3存储配置
