@@ -111,6 +111,27 @@
         </div>
       </div>
 
+      <!-- Similar Products -->
+      <div v-if="similarProducts.length > 0" class="similar-products-section">
+        <h2 class="similar-title">You May Also Like</h2>
+        <div class="similar-products-grid">
+          <div
+            v-for="item in similarProducts"
+            :key="item.id"
+            class="similar-product-card"
+            @click="$router.push({ name: 'ProductDetail', params: { id: item.id.toString() } })"
+          >
+            <div class="similar-img-box">
+              <img :src="getSimilarImage(item)" :alt="item.name" />
+            </div>
+            <div class="similar-info">
+              <div class="similar-name">{{ item.name }}</div>
+              <div class="similar-price">${{ formatPrice(item.price) }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- 商品评论区域 -->
       <div class="product-comments-section">
         <!-- 评论标题和统计信息 -->
@@ -313,6 +334,7 @@ import { S3_CONFIG } from '../config/api-endpoints'
 import { useCheckout } from '../composables/useCheckout'
 import { authState } from '../auth/authState'
 import { signIn } from '../auth/zitadel'
+import { findSimilarProducts, type ProductSearchItem } from '../api/search-agent'
 
 // 默认图片
 import defaultImg from '../assets/defaultimg.png'
@@ -340,6 +362,32 @@ const pinnedReview = ref<Comment | null>(null)
 // 图片相关响应式数据
 const activeImageIndex = ref(0)
 
+// AI 相似商品
+const similarProducts = ref<ProductSearchItem[]>([])
+
+const loadSimilarProducts = async (productName: string) => {
+  try {
+    const result = await findSimilarProducts(productName, 4)
+    if (result.code === 200) {
+      similarProducts.value = result.products
+    }
+  } catch {
+    // Non-critical, silently ignore
+  }
+}
+
+const getSimilarImage = (item: ProductSearchItem) => {
+  if (item.pic_info) {
+    try {
+      const images = JSON.parse(item.pic_info)
+      if (Array.isArray(images) && images.length > 0) {
+        const img = images[0]
+        return img.startsWith('http') ? img : `${S3_CONFIG.BASE_URL}${img}`
+      }
+    } catch { /* ignore */ }
+  }
+  return defaultImg
+}
 
 // 获取商品详情
 const fetchProductDetail = async () => {
@@ -358,6 +406,7 @@ const fetchProductDetail = async () => {
     console.log('Product detail fetched successfully:', result)
     console.log('Product ID field:', result.id)
     console.log('All product fields:', Object.keys(result))
+    loadSimilarProducts(result.name)
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Failed to fetch product details'
     console.error('Failed to fetch product details:', err)
@@ -912,6 +961,67 @@ onMounted(async () => {
   color: #666;
   line-height: 1.6;
   margin-bottom: 4px;
+}
+
+/* Similar Products */
+.similar-products-section {
+  margin-top: 48px;
+  padding-top: 32px;
+  border-top: 1px solid #eee;
+}
+.similar-title {
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin-bottom: 20px;
+  color: #222;
+}
+.similar-products-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+.similar-product-card {
+  cursor: pointer;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+.similar-product-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+.similar-img-box {
+  width: 100%;
+  aspect-ratio: 1/1;
+  background: #f7f7f7;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.similar-img-box img {
+  width: 90%;
+  height: 90%;
+  object-fit: cover;
+}
+.similar-info {
+  padding: 12px;
+}
+.similar-name {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.similar-price {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #c75d35;
 }
 
 /* 评论区域样式 */
