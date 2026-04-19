@@ -5,7 +5,9 @@ import {
   streamIntent,
   getSearchHistory,
   getHotSearches,
+  getSuggestions,
   type ProductSearchItem,
+  type SuggestionItem,
   type SSECallbacks,
 } from '../api/search-agent'
 import { getProductList } from '../api/product'
@@ -18,6 +20,7 @@ export function useAiSearch() {
   const intentResult = ref<Record<string, unknown> | null>(null)
   const searchHistory = ref<string[]>([])
   const hotSearches = ref<string[]>([])
+  const suggestions = ref<SuggestionItem[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
 
@@ -112,6 +115,17 @@ export function useAiSearch() {
     }
   }
 
+  async function loadSuggestions() {
+    try {
+      const result = await getSuggestions(6)
+      if (result.code === 200 && result.suggestions.length > 0) {
+        suggestions.value = result.suggestions
+      }
+    } catch {
+      // Non-critical, ignore
+    }
+  }
+
   return {
     aiProducts,
     aiRecommendation,
@@ -119,10 +133,12 @@ export function useAiSearch() {
     intentResult,
     searchHistory,
     hotSearches,
+    suggestions,
     loading,
     error,
     doSearch,
     loadSearchContext,
+    loadSuggestions,
     cancelStreams,
   }
 }
