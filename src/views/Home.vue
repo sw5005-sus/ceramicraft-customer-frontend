@@ -87,7 +87,7 @@
       <span class="suggestion-label">Suggested for You:</span>
       <span class="suggestion-content" :class="{ fading: suggestionFading }">
         <span class="suggestion-keyword">{{ currentSuggestion.keyword }}</span>
-        <span v-if="currentSuggestion.reason" class="suggestion-reason">
+        <span v-if="authState.isAuthenticated && currentSuggestion.reason" class="suggestion-reason">
           — {{ currentSuggestion.reason }}
         </span>
       </span>
@@ -153,6 +153,7 @@ import { getProductList } from '../api/product'
 import type { Product, ProductListParams } from '../api/product'
 import { S3_CONFIG } from '../config/api-endpoints'
 import { useAiSearch } from '../composables/useAiSearch'
+import { authState } from '../auth/authState'
 import IntentBadges from '../components/IntentBadges.vue'
 
 // 默认图片
