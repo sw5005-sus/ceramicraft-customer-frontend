@@ -132,8 +132,8 @@
         </div>
       </div>
 
-      <!-- 商品评论区域 -->
-      <div class="product-comments-section">
+      <!-- 商品评论区域（仅登录用户可见） -->
+      <div v-if="authState.isAuthenticated" class="product-comments-section">
         <!-- 评论标题和统计信息 -->
         <div class="comments-header">
           <h2>Customer Reviews</h2>
@@ -312,6 +312,19 @@
           </div>
         </div>
       </div>
+
+      <!-- 未登录用户提示：引导登录查看评论 -->
+      <div v-else class="product-comments-section">
+        <div class="comments-header">
+          <h2>Customer Reviews</h2>
+        </div>
+        <div class="reviews-signin-hint">
+          <p>Sign in to view customer reviews.</p>
+          <button type="button" class="reviews-signin-button" @click="handleSignInForReviews">
+            Sign in
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -416,11 +429,18 @@ const fetchProductDetail = async () => {
 }
 
 // 在组件挂载后获取评论，不与商品详情绑定
+// 匿名用户跳过 — reviews 接口需要 Bearer token，否则会 401
 const initializeComments = async () => {
+  if (!authState.isAuthenticated) return
   const productId = route.params.id as string
   if (productId) {
     await fetchProductComments()
   }
+}
+
+// 未登录用户点击「Sign in」进入 Zitadel 登录，登录后回到当前商品详情页
+const handleSignInForReviews = async () => {
+  await signIn(route.fullPath)
 }
 
 // 获取商品评论
@@ -582,31 +602,39 @@ const addToCart = async () => {
 // 立即购买
 const buyNow = () => {
   if (!product.value) return
-  
+
   // 检查登录状态
   if (!isLoggedIn()) {
     // 未登录，跳转到 Zitadel 登录
     signIn(route.fullPath)
     return
   }
-  
-  // 创建结账商品项
+
+  // Use the route param for product ID — the detail response does not include `id`.
+  const productId = parseInt(route.params.id as string, 10)
+  if (!Number.isFinite(productId) || productId <= 0) {
+    ElMessage.error('Invalid product. Please refresh and try again.')
+    return
+  }
+
+  // 创建结账商品项（临时条目，不对应真实 cart item）
   const checkoutItem = {
-    id: Date.now(), // 使用时间戳作为临时ID
+    id: Date.now(), // Local-only temp id; see fromCart flag below
     quantity: quantity.value,
     product_info: {
-      id: product.value.id!,
+      id: productId,
       name: product.value.name,
       pic_info: product.value.pic_info,
       price: product.value.price
     },
     total_price: product.value.price * quantity.value,
-    selected: true
+    selected: true,
+    fromCart: false
   }
-  
+
   // 设置结账数据
   setCheckoutData([checkoutItem], null)
-  
+
   // 跳转到结账页面
   router.push({ name: 'CustomerCheckout' })
 }
@@ -1117,6 +1145,39 @@ onMounted(async () => {
 }
 
 .comments-error button:hover {
+  background: #a64d2a;
+}
+
+/* 未登录提示块（引导 Sign in 查看评论） */
+.reviews-signin-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 32px 20px;
+  color: #666;
+  text-align: center;
+  flex-wrap: wrap;
+}
+
+.reviews-signin-hint p {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.reviews-signin-button {
+  background: #c75d35;
+  color: #fff;
+  border: none;
+  padding: 8px 20px;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.reviews-signin-button:hover {
   background: #a64d2a;
 }
 

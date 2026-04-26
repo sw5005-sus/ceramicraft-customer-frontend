@@ -14,6 +14,13 @@ interface CheckoutItem {
   }
   total_price: number
   selected: boolean
+  /**
+   * Whether `id` refers to a real cart item (true) or a local-only temp id
+   * produced by a direct "Buy Now" from the product detail page (false).
+   * When false, Checkout.vue must not attempt to remove it from the cart
+   * after the order is placed.
+   */
+  fromCart?: boolean
 }
 
 interface PriceEstimate {

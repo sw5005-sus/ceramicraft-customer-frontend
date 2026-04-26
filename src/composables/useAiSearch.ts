@@ -4,11 +4,14 @@ import {
   streamRagSearch,
   streamIntent,
   getSearchHistory,
+  clearSearchHistory,
   getHotSearches,
   getSuggestions,
+  stripMarkdownFence,
   type ProductSearchItem,
   type SuggestionItem,
   type SSECallbacks,
+  type SearchIntentResult,
 } from '../api/search-agent'
 import { getProductList } from '../api/product'
 import type { Product } from '../api/product'
@@ -17,7 +20,7 @@ export function useAiSearch() {
   const aiProducts = ref<ProductSearchItem[]>([])
   const aiRecommendation = ref('')
   const aiRecommendationLoading = ref(false)
-  const intentResult = ref<Record<string, unknown> | null>(null)
+  const intentResult = ref<SearchIntentResult | null>(null)
   const searchHistory = ref<string[]>([])
   const hotSearches = ref<string[]>([])
   const suggestions = ref<SuggestionItem[]>([])
@@ -79,6 +82,8 @@ export function useAiSearch() {
     ragController = await streamRagSearch(query, 5, ragCallbacks)
 
     // 3. Streaming intent parsing
+    //    LLM may wrap the JSON in ```json ... ``` fences even though the system
+    //    prompt forbids it — strip them before JSON.parse.
     let intentBuffer = ''
     const intentCallbacks: SSECallbacks = {
       onToken(token) {
@@ -86,7 +91,7 @@ export function useAiSearch() {
       },
       onComplete() {
         try {
-          intentResult.value = JSON.parse(intentBuffer)
+          intentResult.value = JSON.parse(stripMarkdownFence(intentBuffer))
         } catch {
           intentResult.value = null
         }
@@ -126,6 +131,15 @@ export function useAiSearch() {
     }
   }
 
+  async function doClearHistory() {
+    try {
+      await clearSearchHistory()
+      searchHistory.value = []
+    } catch {
+      // Non-critical
+    }
+  }
+
   return {
     aiProducts,
     aiRecommendation,
@@ -140,5 +154,6 @@ export function useAiSearch() {
     loadSearchContext,
     loadSuggestions,
     cancelStreams,
+    doClearHistory,
   }
 }

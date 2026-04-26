@@ -36,6 +36,49 @@ export interface SuggestionItem {
   type: string
 }
 
+/**
+ * Structured search intent returned by /intent/stream.
+ * Shape is defined by the backend agent system prompt in SearchIntentService.java.
+ * Any field may be null when the agent cannot infer it.
+ */
+export interface SearchIntent {
+  category: string | null
+  priceRange: { min: number | null; max: number | null } | null
+  material: string | null
+  style: string | null
+  keywords: string[]
+  occasion: string | null
+  confidence: number
+}
+
+/** Error shape emitted when the query is off-topic. */
+export interface SearchIntentError {
+  error: string
+  confidence: 0.0
+}
+
+export type SearchIntentResult = SearchIntent | SearchIntentError
+
+export function isIntentError(
+  result: SearchIntentResult | null,
+): result is SearchIntentError {
+  return !!result && 'error' in result
+}
+
+/**
+ * Strip markdown code fences from an LLM-generated JSON string.
+ * LLMs (even with "no markdown" instructions) occasionally wrap JSON in ```json ... ```
+ * fences. Backend SuggestionService cleans this server-side; IntentService streams raw
+ * tokens, so we clean here before JSON.parse.
+ */
+export function stripMarkdownFence(raw: string): string {
+  return raw
+    .trim()
+    .replace(/^```(?:json)?\s*/i, '')
+    .replace(/\s*```$/, '')
+    .trim()
+}
+
 export interface SuggestionResponse {
   code: number
   userId: string | null

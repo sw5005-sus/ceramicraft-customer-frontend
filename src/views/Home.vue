@@ -16,7 +16,10 @@
         <!-- AI Search Panel (history + hot) -->
         <div v-show="showSearchPanel && (searchHistory.length > 0 || hotSearches.length > 0)" class="search-panel">
           <div v-if="searchHistory.length > 0" class="search-panel-section">
-            <div class="search-panel-title">Recent Searches</div>
+            <div class="search-panel-title">
+              Recent Searches
+              <span class="clear-history" @mousedown.prevent="doClearHistory">Clear</span>
+            </div>
             <div class="search-tags">
               <span v-for="tag in searchHistory" :key="tag" class="search-tag" @mousedown.prevent="applySearchTag(tag)">{{ tag }}</span>
             </div>
@@ -84,6 +87,9 @@
       <span class="suggestion-label">Suggested for You:</span>
       <span class="suggestion-content" :class="{ fading: suggestionFading }">
         <span class="suggestion-keyword">{{ currentSuggestion.keyword }}</span>
+        <span v-if="currentSuggestion.reason" class="suggestion-reason">
+          — {{ currentSuggestion.reason }}
+        </span>
       </span>
     </div>
 
@@ -98,6 +104,9 @@
       <button @click="fetchProducts">Retry</button>
     </div>
     
+    <!-- AI parsed intent badges -->
+    <IntentBadges :intent="intentResult" />
+
     <!-- AI Recommendation (typewriter effect) -->
     <div v-if="aiRecommendation || aiRecommendationLoading" class="ai-recommendation">
       <div class="ai-recommendation-header">
@@ -105,7 +114,7 @@
         <span>AI Recommendation</span>
         <span v-if="aiRecommendationLoading" class="ai-typing">thinking...</span>
       </div>
-      <div class="ai-recommendation-text">{{ aiRecommendation }}</div>
+      <div class="ai-recommendation-text" v-html="highlightedRecommendation" @click="onRecommendationClick"></div>
     </div>
 
     <!-- 商品列表 -->
@@ -144,6 +153,7 @@ import { getProductList } from '../api/product'
 import type { Product, ProductListParams } from '../api/product'
 import { S3_CONFIG } from '../config/api-endpoints'
 import { useAiSearch } from '../composables/useAiSearch'
+import IntentBadges from '../components/IntentBadges.vue'
 
 // 默认图片
 import defaultImg from '../assets/defaultimg.png'
@@ -168,6 +178,7 @@ const {
   aiProducts,
   aiRecommendation,
   aiRecommendationLoading,
+  intentResult,
   searchHistory,
   hotSearches,
   suggestions,
@@ -176,6 +187,7 @@ const {
   loadSearchContext,
   loadSuggestions,
   cancelStreams,
+  doClearHistory,
 } = useAiSearch()
 
 // Suggestions carousel
@@ -239,6 +251,52 @@ const selectedSortText = computed(() => {
   const option = sortOptions.value.find(opt => opt.value === sortOrder.value)
   return option ? option.label : 'Newest First'
 })
+
+// Highlight product names inside the AI recommendation text
+const highlightedRecommendation = computed(() => {
+  const text = aiRecommendation.value
+  if (!text) return ''
+  const items = aiProducts.value
+  if (items.length === 0) return escapeHtml(text)
+
+  const names = items
+    .map(p => p.name)
+    .filter(Boolean)
+    .sort((a, b) => b.length - a.length)
+  if (names.length === 0) return escapeHtml(text)
+
+  const pattern = new RegExp(
+    `(${names.map(n => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`,
+    'gi',
+  )
+
+  return text
+    .split(pattern)
+    .map(segment => {
+      const match = items.find(p => p.name.toLowerCase() === segment.toLowerCase())
+      if (match) {
+        return `<span class="ai-product-link" data-product-id="${match.id}">${escapeHtml(segment)}</span>`
+      }
+      return escapeHtml(segment)
+    })
+    .join('')
+})
+
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+
+function onRecommendationClick(e: MouseEvent) {
+  const target = e.target as HTMLElement
+  if (target.classList.contains('ai-product-link')) {
+    const id = target.dataset.productId
+    if (id) goToProductDetail(Number(id))
+  }
+}
 
 // 获取商品列表
 const fetchProducts = async () => {
@@ -890,6 +948,10 @@ h1 {
 .suggestion-reason {
   font-size: 0.85rem;
   color: #888;
+  font-style: italic;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 
 /* AI Search Panel */
@@ -913,6 +975,19 @@ h1 {
   margin-bottom: 8px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.clear-history {
+  font-size: 0.75rem;
+  color: #bbb;
+  cursor: pointer;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.clear-history:hover {
+  color: #c75d35;
 }
 .search-tags { display: flex; flex-wrap: wrap; gap: 8px; }
 .search-tag {
@@ -960,6 +1035,18 @@ h1 {
   font-size: 0.95rem;
   color: #444;
   line-height: 1.6;
+}
+.ai-recommendation-text :deep(.ai-product-link) {
+  color: #c75d35;
+  font-weight: 600;
+  cursor: pointer;
+  border-bottom: 1.5px dashed #c75d35;
+  padding-bottom: 1px;
+  transition: color 0.2s, border-color 0.2s;
+}
+.ai-recommendation-text :deep(.ai-product-link:hover) {
+  color: #a64d2a;
+  border-bottom-style: solid;
 }
 
 /* 商品信息样式调整 */
