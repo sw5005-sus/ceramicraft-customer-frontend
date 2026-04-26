@@ -6,6 +6,7 @@
       <router-view />
     </main>
     <Footer />
+    <SupportFab />
   </div>
 </template>
 
@@ -17,6 +18,7 @@
 
 import Header from '../components/Header.vue'
 import Footer from '../components/Footer.vue'
+import SupportFab from '../components/SupportFab.vue'
 </script>
 
 <style scoped>

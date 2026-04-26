@@ -5,7 +5,10 @@
 
 import { reactive, readonly } from 'vue'
 import { userManager } from './zitadel'
+import { ensureLocalUserRegistered } from './ensureLocalUser'
 import type { User } from 'oidc-client-ts'
+
+let provisioningUser = false
 
 /** 认证状态接口 */
 interface AuthState {
@@ -50,7 +53,11 @@ const updateState = (user: User | null) => {
 export const initAuth = async (): Promise<void> => {
   try {
     // 从 storage 恢复已有 session
-    const user = await userManager.getUser()
+    let user = await userManager.getUser()
+    if (user && !user.expired) {
+      const provisioned = await ensureLocalUserRegistered(user)
+      if (provisioned) user = provisioned
+    }
     updateState(user)
   } catch (error) {
     console.warn('[Auth] Failed to restore session:', error)
@@ -60,9 +67,17 @@ export const initAuth = async (): Promise<void> => {
   }
 
   // 监听 token 加载（登录成功 / silent renew 成功）
-  userManager.events.addUserLoaded((user: User) => {
+  userManager.events.addUserLoaded(async (user: User) => {
     console.log('[Auth] User loaded')
     updateState(user)
+    if (provisioningUser) return
+    provisioningUser = true
+    try {
+      const provisioned = await ensureLocalUserRegistered(user)
+      if (provisioned) updateState(provisioned)
+    } finally {
+      provisioningUser = false
+    }
   })
 
   // 监听用户卸载（登出）

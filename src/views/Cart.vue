@@ -442,9 +442,11 @@ const handleCheckout = () => {
     return
   }
   
-  // 获取选中的商品
-  const selectedItems = cartItems.value.filter(item => item.selected)
-  
+  // 获取选中的商品（标记 fromCart=true，让 Checkout 下单后删除真实购物车条目）
+  const selectedItems = cartItems.value
+    .filter(item => item.selected)
+    .map(item => ({ ...item, fromCart: true }))
+
   // 传递结账数据
   setCheckoutData(selectedItems, priceEstimate.value)
   

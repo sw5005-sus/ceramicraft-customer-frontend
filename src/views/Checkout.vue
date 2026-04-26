@@ -581,13 +581,16 @@ const placeOrder = async () => {
     if (orderNumber) {
       ElMessage.success(`Order placed successfully! Order No: ${orderNumber}`)
       
-      // 从购物车中删除已结账的商品
+      // 从购物车中删除已结账的商品（仅对从购物车发起的结账生效；
+      // "Buy Now" 路径的 item.id 是临时生成的，不对应真实购物车条目）
       try {
-        const deletePromises = checkoutItems.value.map(item => 
-          removeFromCart(item.id)
-        )
-        await Promise.all(deletePromises)
-        console.log('Successfully removed checked out items from cart')
+        const deletePromises = checkoutItems.value
+          .filter(item => item.fromCart)
+          .map(item => removeFromCart(item.id))
+        if (deletePromises.length > 0) {
+          await Promise.all(deletePromises)
+          console.log('Successfully removed checked out items from cart')
+        }
       } catch (error) {
         console.error('Failed to remove some items from cart:', error)
         // 即使删除购物车项失败，也不影响订单成功的流程
